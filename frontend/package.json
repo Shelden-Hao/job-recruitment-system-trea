@@ -1,0 +1,31 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev:h5": "uni",
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "build:h5": "uni build",
+    "build:mp-weixin": "uni build -p mp-weixin"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "^3.0.0",
+    "@dcloudio/uni-app-plus": "^3.0.0",
+    "@dcloudio/uni-components": "^3.0.0",
+    "@dcloudio/uni-h5": "^3.0.0",
+    "@dcloudio/uni-mp-weixin": "^3.0.0",
+    "uview-plus": "^3.1.41",
+    "pinia": "^3.0.1",
+    "axios": "^1.8.4",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.0.0",
+    "@dcloudio/uni-automator": "^3.0.0",
+    "@dcloudio/uni-cli-shared": "^3.0.0",
+    "@dcloudio/vite-plugin-uni": "^3.0.0",
+    "sass": "^1.69.0",
+    "sass-loader": "^10.4.1",
+    "vite": "^6.2.0"
+  }
+}

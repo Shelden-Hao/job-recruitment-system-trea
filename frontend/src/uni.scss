@@ -1,0 +1,70 @@
+/* uni.scss */
+
+// 主题色
+$uni-primary: #2979ff;
+$uni-success: #19be6b;
+$uni-warning: #ff9900;
+$uni-error: #fa3534;
+$uni-info: #909399;
+
+// 文字颜色
+$uni-text-color: #303133;
+$uni-text-color-inverse: #fff;
+$uni-text-color-grey: #909399;
+$uni-text-color-placeholder: #c0c4cc;
+$uni-text-color-disable: #c0c4cc;
+
+// 背景颜色
+$uni-bg-color: #ffffff;
+$uni-bg-color-grey: #f5f7fa;
+$uni-bg-color-hover: #f1f1f1;
+$uni-bg-color-mask: rgba(0, 0, 0, 0.4);
+
+// 边框颜色
+$uni-border-color: #dcdfe6;
+
+// 尺寸变量
+$uni-font-size-sm: 24rpx;
+$uni-font-size-base: 28rpx;
+$uni-font-size-lg: 32rpx;
+$uni-font-size-title: 40rpx;
+
+// 图片尺寸
+$uni-img-size-sm: 40rpx;
+$uni-img-size-base: 52rpx;
+$uni-img-size-lg: 80rpx;
+
+// Border Radius
+$uni-border-radius-sm: 4rpx;
+$uni-border-radius-base: 8rpx;
+$uni-border-radius-lg: 16rpx;
+$uni-border-radius-circle: 50%;
+
+// 水平间距
+$uni-spacing-row-sm: 10rpx;
+$uni-spacing-row-base: 20rpx;
+$uni-spacing-row-lg: 30rpx;
+
+// 垂直间距
+$uni-spacing-col-sm: 8rpx;
+$uni-spacing-col-base: 16rpx;
+$uni-spacing-col-lg: 24rpx;
+
+// 透明度
+$uni-opacity-disabled: 0.3;
+
+// 文章场景相关
+$uni-color-title: #2c405a;
+$uni-font-size-title: 40rpx;
+$uni-color-subtitle: #555555;
+$uni-font-size-subtitle: 36rpx;
+$uni-color-paragraph: #3f536e;
+$uni-font-size-paragraph: 30rpx;
+
+// 阴影
+$uni-shadow-sm: 0 0 5rpx rgba(0, 0, 0, 0.1);
+$uni-shadow-base: 0 1rpx 6rpx rgba(0, 0, 0, 0.1);
+$uni-shadow-lg: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+
+// 蒙版
+$uni-mask-color: rgba(0, 0, 0, 0.4);
