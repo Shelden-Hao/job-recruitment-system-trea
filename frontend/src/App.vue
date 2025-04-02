@@ -1,41 +1,25 @@
 <script>
-import { defineComponent } from 'vue';
-import { useAuthStore } from './stores/auth';
-import { initSocket, closeSocket } from './services/socket';
-
-export default defineComponent({
-  onLaunch: async function() {
-    const authStore = useAuthStore();
-    // 如果有token，获取当前用户信息
-    if (authStore.token) {
-      try {
-        await authStore.fetchCurrentUser();
-        // 初始化Socket连接
-        initSocket();
-      } catch (error) {
-        console.error('获取用户信息失败:', error);
-      }
-    }
+export default {
+  onLaunch: function() {
+    // 初始化uView
+    uni.$u.config.unit = 'rpx'
+    
+    console.log('App Launch')
   },
-  onUnload: function() {
-    closeSocket();
+  onShow: function() {
+    console.log('App Show')
+  },
+  onHide: function() {
+    console.log('App Hide')
   }
-});
+}
 </script>
 
 <template>
-  <view class="app-container">
-    <page-meta>
-      <navigation-bar />
-    </page-meta>
-    <!-- 页面内容区域 -->
-    <view class="content">
-      <slot></slot>
-    </view>
-  </view>
 </template>
 
-<style>
+<style lang="scss">
+@import "uview-plus/index.scss";
 /* 全局样式 */
 page {
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei', sans-serif;

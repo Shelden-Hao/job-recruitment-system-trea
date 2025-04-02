@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+import uni from '@dcloudio/vite-plugin-uni'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [uni()],
 })

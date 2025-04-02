@@ -1,4 +1,4 @@
-/* uni.scss */
+@import 'uview-plus/theme.scss';
 
 // 主题色
 $uni-primary: #2979ff;
@@ -68,3 +68,10 @@ $uni-shadow-lg: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
 
 // 蒙版
 $uni-mask-color: rgba(0, 0, 0, 0.4);
+
+// 文本省略
+@mixin text-ellipsis {
+ overflow: hidden;
+ white-space: nowrap;
+ text-overflow: ellipsis;
+}

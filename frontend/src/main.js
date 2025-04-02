@@ -1,18 +1,20 @@
-import { createApp } from 'vue'
+import { createSSRApp } from 'vue'
 import App from './App.vue'
-import router from './router'
 import pinia from './stores'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
+import uviewPlus from 'uview-plus'
 import './style.css'
 import './services/api' // 导入API配置
 
-const app = createApp(App)
+export function createApp() {
+  const app = createSSRApp(App)
+  
+  // 注册全局组件和插件
+  app.use(pinia)
+  
+  // 使用并初始化uview-plus
+  app.use(uviewPlus)
 
-// 注册全局组件和插件
-app.use(router)
-app.use(pinia)
-app.use(ElementPlus)
-
-// 挂载应用
-app.mount('#app')
+  return {
+    app
+  }
+}
