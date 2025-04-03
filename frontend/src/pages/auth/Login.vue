@@ -1,12 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '../../stores/auth';
 import { onShow } from '@dcloudio/uni-app';
-
-const router = useRouter();
-const route = useRoute();
-const authStore = useAuthStore();
 
 // 表单数据
 const loginForm = reactive({
@@ -14,48 +8,63 @@ const loginForm = reactive({
   password: ''
 });
 
-// 表单验证规则
-const rules = {
-  username: [
-    { required: true, message: '请输入用户名或邮箱', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
-  ]
-};
+// 错误提示
+const errors = reactive({
+  username: '',
+  password: ''
+});
 
-const formRef = ref(null);
 const loading = ref(false);
+
+// 验证表单
+const validateForm = () => {
+  let isValid = true;
+  
+  // 清除所有错误
+  errors.username = '';
+  errors.password = '';
+  
+  // 验证用户名
+  if (!loginForm.username.trim()) {
+    errors.username = '请输入用户名或邮箱';
+    isValid = false;
+  }
+  
+  // 验证密码
+  if (!loginForm.password) {
+    errors.password = '请输入密码';
+    isValid = false;
+  } else if (loginForm.password.length < 6) {
+    errors.password = '密码长度至少为6个字符';
+    isValid = false;
+  }
+  
+  return isValid;
+};
 
 // 登录方法
 const handleLogin = async () => {
-  if (!formRef.value) return;
+  if (!validateForm()) return;
   
-  try {
-    const valid = await formRef.value.validate();
-    if (valid) {
-      loading.value = true;
-      
-      try {
-        await authStore.login(loginForm);
-        uni.showToast({
-          title: '登录成功',
-          icon: 'success'
-        });
-      } catch (error) {
-        console.error('登录失败:', error);
-        uni.showToast({
-          title: error.response?.data?.message || '登录失败，请检查用户名和密码',
-          icon: 'none'
-        });
-      } finally {
-        loading.value = false;
-      }
-    }
-  } catch (error) {
-    console.log('表单验证失败');
-  }
+  loading.value = true;
+  
+  // 模拟登录过程
+  setTimeout(() => {
+    // 模拟登录成功
+    uni.showToast({
+      title: '登录成功',
+      icon: 'success'
+    });
+    
+    // 模拟跳转到首页
+    setTimeout(() => {
+      uni.switchTab({
+        url: '/pages/index/index'
+      });
+    }, 1500);
+    
+    loading.value = false;
+  }, 1000);
 };
 
 // 跳转到注册页面
@@ -68,9 +77,10 @@ const goToRegister = () => {
 // 页面显示时执行
 onShow(() => {
   // 重置表单
-  if (formRef.value) {
-    formRef.value.resetFields();
-  }
+  loginForm.username = '';
+  loginForm.password = '';
+  errors.username = '';
+  errors.password = '';
 });
 </script>
 
@@ -82,44 +92,38 @@ onShow(() => {
         <text class="login-subtitle">登录您的账户</text>
       </view>
       
-      <u-form
-        ref="formRef"
-        :model="loginForm"
-        :rules="rules"
-        labelPosition="top"
-        @keyup.enter="handleLogin"
-      >
-        <u-form-item label="用户名/邮箱" prop="username">
-          <u-input
+      <view class="form-container">
+        <view class="form-item">
+          <text class="form-label">用户名/邮箱</text>
+          <input
+            class="form-input"
             v-model="loginForm.username"
             placeholder="请输入用户名或邮箱"
-            border="bottom"
-            clearable
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.username" class="error-message">{{ errors.username }}</text>
+        </view>
         
-        <u-form-item label="密码" prop="password">
-          <u-input
+        <view class="form-item">
+          <text class="form-label">密码</text>
+          <input
+            class="form-input"
             v-model="loginForm.password"
-            type="password"
             placeholder="请输入密码"
-            border="bottom"
-            clearable
             password
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.password" class="error-message">{{ errors.password }}</text>
+        </view>
         
         <view class="button-group">
-          <u-button
-            type="primary"
+          <button
+            class="login-button"
             :loading="loading"
             @click="handleLogin"
-            text="登录"
-            block
-            customStyle="margin-top: 40rpx"
-          />
+          >登录</button>
         </view>
-      </u-form>
+      </view>
       
       <view class="login-footer">
         <text class="register-text">还没有账户？</text>
@@ -168,8 +172,48 @@ onShow(() => {
   }
 }
 
+.form-container {
+  margin-bottom: 30rpx;
+}
+
+.form-item {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #606266;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.form-input {
+  width: 100%;
+  height: 80rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #303133;
+  border: none;
+  border-bottom: 1px solid #dcdfe6;
+  background-color: transparent;
+  box-sizing: border-box;
+}
+
 .button-group {
-  margin-top: 40rpx;
+  margin-top: 60rpx;
+}
+
+.login-button {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  background-color: #2979ff;
+  color: #ffffff;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 30rpx;
+  font-weight: 500;
 }
 
 .login-footer {
@@ -186,5 +230,12 @@ onShow(() => {
     color: #2979ff;
     margin-left: 10rpx;
   }
+}
+
+.error-message {
+  display: block;
+  font-size: 24rpx;
+  color: #fa3534;
+  margin-top: 8rpx;
 }
 </style>

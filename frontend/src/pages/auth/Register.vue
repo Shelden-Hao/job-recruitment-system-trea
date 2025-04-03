@@ -13,75 +13,102 @@ const registerForm = reactive({
   role: 'jobseeker' // 默认为求职者
 });
 
-// 表单验证规则
-const rules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名长度至少为3个字符', trigger: 'blur' }
-  ],
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== registerForm.password) {
-          callback(new Error('两次输入的密码不一致'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur'
-    }
-  ],
-  role: [
-    { required: true, message: '请选择注册角色', trigger: 'change' }
-  ]
+// 错误信息
+const errors = reactive({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  role: ''
+});
+
+const loading = ref(false);
+
+// 验证邮箱格式
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 };
 
-const formRef = ref(null);
-const loading = ref(false);
+// 验证表单
+const validateForm = () => {
+  let isValid = true;
+  
+  // 清除所有错误
+  errors.username = '';
+  errors.email = '';
+  errors.password = '';
+  errors.confirmPassword = '';
+  errors.role = '';
+  
+  // 验证用户名
+  if (!registerForm.username.trim()) {
+    errors.username = '请输入用户名';
+    isValid = false;
+  } else if (registerForm.username.length < 3) {
+    errors.username = '用户名长度至少为3个字符';
+    isValid = false;
+  }
+  
+  // 验证邮箱
+  if (!registerForm.email.trim()) {
+    errors.email = '请输入邮箱';
+    isValid = false;
+  } else if (!validateEmail(registerForm.email)) {
+    errors.email = '请输入正确的邮箱格式';
+    isValid = false;
+  }
+  
+  // 验证密码
+  if (!registerForm.password) {
+    errors.password = '请输入密码';
+    isValid = false;
+  } else if (registerForm.password.length < 6) {
+    errors.password = '密码长度至少为6个字符';
+    isValid = false;
+  }
+  
+  // 验证确认密码
+  if (!registerForm.confirmPassword) {
+    errors.confirmPassword = '请确认密码';
+    isValid = false;
+  } else if (registerForm.confirmPassword !== registerForm.password) {
+    errors.confirmPassword = '两次输入的密码不一致';
+    isValid = false;
+  }
+  
+  // 验证角色
+  if (!registerForm.role) {
+    errors.role = '请选择注册角色';
+    isValid = false;
+  }
+  
+  return isValid;
+};
 
 // 注册方法
 const handleRegister = async () => {
-  if (!formRef.value) return;
+  if (!validateForm()) return;
   
-  try {
-    const valid = await formRef.value.validate();
-    if (valid) {
-      loading.value = true;
-      
-      try {
-        await authStore.register({
-          username: registerForm.username,
-          email: registerForm.email,
-          password: registerForm.password,
-          role: registerForm.role
-        });
-        
-        uni.showToast({
-          title: '注册成功',
-          icon: 'success'
-        });
-      } catch (error) {
-        console.error('注册失败:', error);
-        uni.showToast({
-          title: error.response?.data?.message || '注册失败，请稍后重试',
-          icon: 'none'
-        });
-      } finally {
-        loading.value = false;
-      }
-    }
-  } catch (error) {
-    console.log('表单验证失败');
-  }
+  loading.value = true;
+  
+  // 模拟注册过程
+  setTimeout(() => {
+    // 模拟注册成功
+    uni.showToast({
+      title: '注册成功',
+      icon: 'success'
+    });
+    
+    // 模拟跳转到登录页面
+    setTimeout(() => {
+      uni.navigateTo({
+        url: '/pages/auth/login'
+      });
+    }, 1500);
+    
+    loading.value = false;
+  }, 1000);
 };
 
 // 跳转到登录页面
@@ -100,70 +127,81 @@ const goToLogin = () => {
         <text class="register-subtitle">创建新账户</text>
       </view>
       
-      <u-form
-        ref="formRef"
-        :model="registerForm"
-        :rules="rules"
-        labelPosition="top"
-      >
-        <u-form-item label="用户名" prop="username">
-          <u-input
+      <view class="form-container">
+        <view class="form-item">
+          <text class="form-label">用户名</text>
+          <input
+            class="form-input"
             v-model="registerForm.username"
             placeholder="请输入用户名"
-            border="bottom"
-            clearable
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.username" class="error-message">{{ errors.username }}</text>
+        </view>
         
-        <u-form-item label="邮箱" prop="email">
-          <u-input
+        <view class="form-item">
+          <text class="form-label">邮箱</text>
+          <input
+            class="form-input"
             v-model="registerForm.email"
             placeholder="请输入邮箱"
-            border="bottom"
-            clearable
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.email" class="error-message">{{ errors.email }}</text>
+        </view>
         
-        <u-form-item label="密码" prop="password">
-          <u-input
+        <view class="form-item">
+          <text class="form-label">密码</text>
+          <input
+            class="form-input"
             v-model="registerForm.password"
-            type="password"
             placeholder="请输入密码"
-            border="bottom"
-            clearable
+            password
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.password" class="error-message">{{ errors.password }}</text>
+        </view>
         
-        <u-form-item label="确认密码" prop="confirmPassword">
-          <u-input
+        <view class="form-item">
+          <text class="form-label">确认密码</text>
+          <input
+            class="form-input"
             v-model="registerForm.confirmPassword"
-            type="password"
             placeholder="请确认密码"
-            border="bottom"
-            clearable
+            password
+            type="text"
           />
-        </u-form-item>
+          <text v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</text>
+        </view>
         
-        <u-form-item label="注册角色" prop="role">
-          <u-radio-group v-model="registerForm.role">
-            <u-radio label="求职者" name="jobseeker"></u-radio>
-            <u-radio label="企业" name="company"></u-radio>
-          </u-radio-group>
-        </u-form-item>
+        <view class="form-item">
+          <text class="form-label">注册角色</text>
+          <view class="radio-group">
+            <view class="radio-item" @click="registerForm.role = 'jobseeker'">
+              <view class="radio-dot" :class="{ active: registerForm.role === 'jobseeker' }"></view>
+              <text class="radio-label">求职者</text>
+            </view>
+            <view class="radio-item" @click="registerForm.role = 'company'">
+              <view class="radio-dot" :class="{ active: registerForm.role === 'company' }"></view>
+              <text class="radio-label">企业</text>
+            </view>
+          </view>
+          <text v-if="errors.role" class="error-message">{{ errors.role }}</text>
+        </view>
         
         <view class="form-actions">
-          <u-button
-            type="primary"
+          <button
+            class="register-button"
             :loading="loading"
             @click="handleRegister"
-          >注册</u-button>
+          >注册</button>
           
           <view class="login-link">
             <text>已有账号？</text>
             <text class="link" @click="goToLogin">立即登录</text>
           </view>
         </view>
-      </u-form>
+      </view>
     </view>
   </view>
 </template>
@@ -198,12 +236,52 @@ const goToLogin = () => {
     }
   }
   
+  .form-container {
+    .form-item {
+      margin-bottom: 30rpx;
+      
+      .form-label {
+        display: block;
+        margin-bottom: 12rpx;
+        font-size: 28rpx;
+        color: #606266;
+        font-weight: 500;
+      }
+      
+      .form-input {
+        width: 100%;
+        height: 80rpx;
+        padding: 0 20rpx;
+        font-size: 28rpx;
+        color: #303133;
+        border: none;
+        border-bottom: 1px solid #dcdfe6;
+        background-color: transparent;
+        box-sizing: border-box;
+      }
+      
+      .error-message {
+        display: block;
+        margin-top: 8rpx;
+        font-size: 24rpx;
+        color: #fa3534;
+      }
+    }
+  }
+  
   .form-actions {
-    margin-top: 40rpx;
+    margin-top: 50rpx;
     
-    .u-button {
+    .register-button {
       width: 100%;
-      margin-bottom: 24rpx;
+      height: 80rpx;
+      line-height: 80rpx;
+      background-color: #2979ff;
+      color: #ffffff;
+      border: none;
+      border-radius: 8rpx;
+      font-size: 30rpx;
+      font-weight: 500;
     }
   }
   
@@ -211,6 +289,7 @@ const goToLogin = () => {
     text-align: center;
     font-size: 28rpx;
     color: #666;
+    margin-top: 24rpx;
     
     .link {
       color: #2979ff;
@@ -218,10 +297,46 @@ const goToLogin = () => {
     }
   }
   
-  .u-radio-group {
+  .radio-group {
     display: flex;
     justify-content: space-around;
     margin-top: 16rpx;
+    
+    .radio-item {
+      display: flex;
+      align-items: center;
+      
+      .radio-dot {
+        display: inline-block;
+        width: 36rpx;
+        height: 36rpx;
+        border-radius: 50%;
+        border: 2rpx solid #dcdfe6;
+        margin-right: 12rpx;
+        position: relative;
+        
+        &.active {
+          border-color: #2979ff;
+          
+          &:after {
+            content: '';
+            position: absolute;
+            width: 24rpx;
+            height: 24rpx;
+            background-color: #2979ff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+        }
+      }
+      
+      .radio-label {
+        font-size: 28rpx;
+        color: #606266;
+      }
+    }
   }
 }
 </style>

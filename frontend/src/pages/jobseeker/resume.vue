@@ -3,7 +3,7 @@
     <view class="resume-card">
       <view class="section-header">
         <text class="section-title">基本信息</text>
-        <u-button type="primary" size="mini" @click="handleEdit('basic')">编辑</u-button>
+        <button class="edit-button" size="mini" @click="handleEdit('basic')">编辑</button>
       </view>
       
       <view class="basic-info">
@@ -35,7 +35,7 @@
       
       <view class="section-header">
         <text class="section-title">求职意向</text>
-        <u-button type="primary" size="mini" @click="handleEdit('intention')">编辑</u-button>
+        <button class="edit-button" size="mini" @click="handleEdit('intention')">编辑</button>
       </view>
       
       <view class="intention-info">
@@ -55,7 +55,7 @@
       
       <view class="section-header">
         <text class="section-title">工作经历</text>
-        <u-button type="primary" size="mini" @click="handleEdit('experience')">添加</u-button>
+        <button class="edit-button" size="mini" @click="handleEdit('experience')">添加</button>
       </view>
       
       <view class="experience-list">
@@ -67,8 +67,8 @@
           <text class="position">{{ exp.position }}</text>
           <text class="description">{{ exp.description }}</text>
           <view class="actions">
-            <u-button type="primary" size="mini" @click="handleEditExperience(index)">编辑</u-button>
-            <u-button type="error" size="mini" @click="handleDeleteExperience(index)">删除</u-button>
+            <button class="action-button primary-button" size="mini" @click="handleEditExperience(index)">编辑</button>
+            <button class="action-button danger-button" size="mini" @click="handleDeleteExperience(index)">删除</button>
           </view>
         </view>
       </view>
@@ -190,6 +190,14 @@ export default {
     font-weight: bold;
     color: #333;
   }
+  
+  .edit-button {
+    margin: 0;
+    font-size: 24rpx;
+    line-height: 1.8;
+    background-color: #409eff;
+    color: #fff;
+  }
 }
 
 .basic-info,
@@ -258,7 +266,24 @@ export default {
     
     .actions {
       display: flex;
-      gap: 20rpx;
+      justify-content: flex-end;
+      gap: 16rpx;
+      
+      .action-button {
+        margin: 0;
+        font-size: 24rpx;
+        line-height: 1.8;
+        
+        &.primary-button {
+          background-color: #409eff;
+          color: #fff;
+        }
+        
+        &.danger-button {
+          background-color: #f56c6c;
+          color: #fff;
+        }
+      }
     }
   }
 }

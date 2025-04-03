@@ -1,11 +1,6 @@
 <script setup>
 import { onLoad } from '@dcloudio/uni-app'
 import { ref } from 'vue';
-import { useJobStore } from '../../stores/job';
-import { useResumeStore } from '../../stores/resume';
-
-const jobStore = useJobStore();
-const resumeStore = useResumeStore();
 
 // 搜索关键词
 const searchKeyword = ref('');
@@ -16,28 +11,57 @@ const jobs = ref([]);
 const pagination = ref({
   page: 1,
   limit: 10,
-  total: 0
+  total: 30
 });
 
-// 加载职位列表
-const loadJobs = async () => {
+// 加载职位列表（使用假数据）
+const loadJobs = () => {
   loading.value = true;
-  try {
-    const response = await jobStore.getJobs({
-      keyword: searchKeyword.value,
-      page: pagination.value.page,
-      limit: pagination.value.limit
-    });
-    jobs.value = response.data;
-    pagination.value.total = response.total;
-  } catch (error) {
-    uni.showToast({
-      title: error.message || '加载职位失败',
-      icon: 'none'
-    });
-  } finally {
+  
+  // 模拟API延迟
+  setTimeout(() => {
+    // 模拟的职位数据
+    jobs.value = [
+      {
+        id: 1,
+        title: '前端开发工程师',
+        salary: '15k-25k',
+        company: {
+          name: '科技有限公司'
+        },
+        location: '深圳',
+        tags: ['Vue', 'React', '小程序'],
+        experience: '3-5年',
+        education: '本科'
+      },
+      {
+        id: 2,
+        title: '后端开发工程师',
+        salary: '20k-30k',
+        company: {
+          name: '互联网公司'
+        },
+        location: '广州',
+        tags: ['Java', 'Spring Boot', 'MySQL'],
+        experience: '1-3年',
+        education: '本科'
+      },
+      {
+        id: 3,
+        title: 'UI设计师',
+        salary: '12k-18k',
+        company: {
+          name: '创新科技公司'
+        },
+        location: '北京',
+        tags: ['UI设计', 'Figma', 'Sketch'],
+        experience: '2-3年',
+        education: '大专'
+      }
+    ];
+    
     loading.value = false;
-  }
+  }, 500);
 };
 
 // 搜索职位
@@ -47,31 +71,38 @@ const handleSearch = () => {
 };
 
 // 投递简历
-const handleApply = async (job) => {
-  try {
-    if (!resumeStore.hasResume) {
-      uni.showModal({
-        title: '提示',
-        content: '请先上传简历',
-        confirmText: '去上传',
-        success: (res) => {
-          if (res.confirm) {
-            uni.navigateTo({
-              url: '/pages/resume/upload'
-            });
-          }
+const handleApply = (job) => {
+  // 检查是否有简历
+  const hasResume = true; // 假设用户已上传简历
+  
+  if (!hasResume) {
+    uni.showModal({
+      title: '提示',
+      content: '请先上传简历',
+      confirmText: '去上传',
+      success: (res) => {
+        if (res.confirm) {
+          uni.navigateTo({
+            url: '/pages/resume/index'
+          });
         }
-      });
-      return;
-    }
-    
-    await resumeStore.applyJob(job.id);
-  } catch (error) {
-    uni.showToast({
-      title: error.message || '投递失败',
-      icon: 'none'
+      }
     });
+    return;
   }
+  
+  // 模拟投递成功
+  uni.showLoading({
+    title: '投递中...'
+  });
+  
+  setTimeout(() => {
+    uni.hideLoading();
+    uni.showToast({
+      title: '投递成功',
+      icon: 'success'
+    });
+  }, 1000);
 };
 
 // 查看职位详情
@@ -91,19 +122,25 @@ onLoad(() => {
   <view class="jobseeker-container">
     <!-- 搜索栏 -->
     <view class="search-bar">
-      <u-search
-        v-model="searchKeyword"
-        placeholder="搜索职位名称、公司名称"
-        :show-action="true"
-        action-text="搜索"
-        @search="handleSearch"
-        @custom="handleSearch"
-      />
+      <view class="search-input-container">
+        <input
+          class="search-input"
+          v-model="searchKeyword"
+          placeholder="搜索职位名称、公司名称"
+          confirm-type="search"
+          @confirm="handleSearch"
+        />
+        <button class="search-button" @click="handleSearch">搜索</button>
+      </view>
     </view>
     
     <!-- 职位列表 -->
     <view class="job-list">
-      <u-empty v-if="jobs.length === 0" text="暂无职位" mode="job" />
+      <!-- 空状态 -->
+      <view v-if="jobs.length === 0" class="empty-state">
+        <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
+        <text class="empty-text">暂无职位</text>
+      </view>
       
       <view v-else class="job-item" v-for="job in jobs" :key="job.id">
         <view class="job-header" @click="viewJobDetail(job)">
@@ -117,14 +154,13 @@ onLoad(() => {
         </view>
         
         <view class="job-tags">
-          <u-tag
+          <view
             v-for="tag in job.tags"
             :key="tag"
-            :text="tag"
-            type="info"
-            size="mini"
-            mode="light"
-          />
+            class="job-tag"
+          >
+            {{ tag }}
+          </view>
         </view>
         
         <view class="job-footer">
@@ -134,20 +170,29 @@ onLoad(() => {
             <text>{{ job.education }}学历</text>
           </view>
           
-          <u-button
-            type="primary"
+          <button
+            class="apply-button"
             size="mini"
             @click="handleApply(job)"
-          >投递简历</u-button>
+          >投递简历</button>
         </view>
       </view>
     </view>
     
-    <!-- 分页 -->
-    <u-loadmore
-      :status="loading ? 'loading' : jobs.length < pagination.total ? 'loadmore' : 'nomore'"
-      @loadmore="loadJobs"
-    />
+    <!-- 加载更多 -->
+    <view class="loadmore-container">
+      <view v-if="loading" class="loading-state">
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <view v-else-if="jobs.length < pagination.total" class="loadmore-button" @click="loadJobs">
+        <text class="loadmore-text">加载更多</text>
+      </view>
+      
+      <view v-else class="no-more">
+        <text class="no-more-text">没有更多数据了</text>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -163,10 +208,53 @@ onLoad(() => {
     z-index: 100;
     padding: 20rpx;
     background-color: #fff;
+    
+    .search-input-container {
+      display: flex;
+      align-items: center;
+      
+      .search-input {
+        flex: 1;
+        height: 64rpx;
+        background-color: #f5f5f5;
+        border-radius: 32rpx;
+        padding: 0 24rpx;
+        font-size: 28rpx;
+      }
+      
+      .search-button {
+        margin-left: 16rpx;
+        height: 64rpx;
+        line-height: 64rpx;
+        padding: 0 24rpx;
+        font-size: 28rpx;
+        background-color: #2979ff;
+        color: #fff;
+      }
+    }
   }
   
   .job-list {
     padding: 20rpx;
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40rpx;
+      
+      .empty-image {
+        width: 120rpx;
+        height: 120rpx;
+        margin-bottom: 20rpx;
+      }
+      
+      .empty-text {
+        font-size: 28rpx;
+        color: #999;
+      }
+    }
     
     .job-item {
       background-color: #fff;
@@ -212,6 +300,14 @@ onLoad(() => {
         flex-wrap: wrap;
         gap: 12rpx;
         margin-bottom: 16rpx;
+        
+        .job-tag {
+          font-size: 24rpx;
+          color: #2979ff;
+          background-color: rgba(41, 121, 255, 0.1);
+          padding: 4rpx 12rpx;
+          border-radius: 4rpx;
+        }
       }
       
       .job-footer {
@@ -227,6 +323,47 @@ onLoad(() => {
             margin: 0 8rpx;
           }
         }
+        
+        .apply-button {
+          margin: 0;
+          background-color: #2979ff;
+          color: #fff;
+          font-size: 24rpx;
+          padding: 8rpx 20rpx;
+          line-height: 1.5;
+        }
+      }
+    }
+  }
+  
+  .loadmore-container {
+    padding: 20rpx;
+    text-align: center;
+    
+    .loading-state {
+      padding: 20rpx 0;
+      
+      .loading-text {
+        font-size: 28rpx;
+        color: #999;
+      }
+    }
+    
+    .loadmore-button {
+      padding: 20rpx 0;
+      
+      .loadmore-text {
+        font-size: 28rpx;
+        color: #2979ff;
+      }
+    }
+    
+    .no-more {
+      padding: 20rpx 0;
+      
+      .no-more-text {
+        font-size: 28rpx;
+        color: #999;
       }
     }
   }

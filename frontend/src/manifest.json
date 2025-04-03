@@ -48,13 +48,14 @@
     }
   },
   "quickapp": {},
+  /* 小程序特有相关 */
   "mp-weixin": {
-    "appid": "",
+    //    微信小程序的 appid
+    "appid": "wxdc8f17a17c62fe89",
     "setting": {
       "urlCheck": false
     },
-    "usingComponents": true,
-    "mergeVirtualHostAttributes" : true
+    "usingComponents": true
   },
   "mp-alipay": {
     "usingComponents": true

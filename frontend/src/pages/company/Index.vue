@@ -1,30 +1,56 @@
 <script setup>
 import { onLoad } from '@dcloudio/uni-app'
 import { ref } from 'vue';
-import { useJobStore } from '../../stores/job';
-import { useResumeStore } from '../../stores/resume';
-
-const jobStore = useJobStore();
-const resumeStore = useResumeStore();
 
 // 职位列表
 const jobs = ref([]);
 const loading = ref(false);
 
-// 加载企业发布的职位
-const loadCompanyJobs = async () => {
+// 加载企业发布的职位（使用模拟数据）
+const loadCompanyJobs = () => {
   loading.value = true;
-  try {
-    const response = await jobStore.getCompanyJobs();
-    jobs.value = response.data;
-  } catch (error) {
-    uni.showToast({
-      title: error.message || '加载职位失败',
-      icon: 'none'
-    });
-  } finally {
+  
+  // 模拟API延迟
+  setTimeout(() => {
+    // 模拟数据
+    jobs.value = [
+      {
+        id: 1,
+        title: '前端开发工程师',
+        salary: '15k-25k',
+        location: '深圳',
+        experience: '3-5年',
+        education: '本科',
+        tags: ['Vue', 'React', '小程序'],
+        createdAt: '2024-03-15',
+        applicationCount: 23
+      },
+      {
+        id: 2,
+        title: '后端开发工程师',
+        salary: '20k-30k',
+        location: '广州',
+        experience: '1-3年',
+        education: '本科',
+        tags: ['Java', 'Spring Boot', 'MySQL'],
+        createdAt: '2024-03-10',
+        applicationCount: 18
+      },
+      {
+        id: 3,
+        title: 'UI设计师',
+        salary: '12k-18k',
+        location: '北京',
+        experience: '2-3年',
+        education: '大专',
+        tags: ['UI设计', 'Figma', 'Sketch'],
+        createdAt: '2024-03-05',
+        applicationCount: 15
+      }
+    ];
+    
     loading.value = false;
-  }
+  }, 500);
 };
 
 // 发布新职位
@@ -49,25 +75,19 @@ const viewApplications = (job) => {
 };
 
 // 删除职位
-const deleteJob = async (job) => {
+const deleteJob = (job) => {
   uni.showModal({
     title: '确认删除',
     content: '确定要删除该职位吗？',
-    success: async (res) => {
+    success: (res) => {
       if (res.confirm) {
-        try {
-          await jobStore.deleteJob(job.id);
-          await loadCompanyJobs();
-          uni.showToast({
-            title: '删除成功',
-            icon: 'success'
-          });
-        } catch (error) {
-          uni.showToast({
-            title: error.message || '删除失败',
-            icon: 'none'
-          });
-        }
+        // 模拟删除操作
+        jobs.value = jobs.value.filter(item => item.id !== job.id);
+        
+        uni.showToast({
+          title: '删除成功',
+          icon: 'success'
+        });
       }
     }
   });
@@ -83,16 +103,16 @@ onLoad(() => {
   <view class="company-container">
     <!-- 顶部操作栏 -->
     <view class="action-bar">
-      <u-button
-        type="primary"
-        icon="plus"
-        @click="createJob"
-      >发布新职位</u-button>
+      <button class="create-button" @click="createJob">发布新职位</button>
     </view>
     
     <!-- 职位列表 -->
     <view class="job-list">
-      <u-empty v-if="jobs.length === 0" text="暂无发布的职位" mode="job" />
+      <!-- 空状态 -->
+      <view v-if="jobs.length === 0" class="empty-state">
+        <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
+        <text class="empty-text">暂无发布的职位</text>
+      </view>
       
       <view v-else class="job-item" v-for="job in jobs" :key="job.id">
         <view class="job-header">
@@ -109,14 +129,11 @@ onLoad(() => {
         </view>
         
         <view class="job-tags">
-          <u-tag
+          <view
             v-for="tag in job.tags"
             :key="tag"
-            :text="tag"
-            type="info"
-            size="mini"
-            mode="light"
-          />
+            class="job-tag"
+          >{{ tag }}</view>
         </view>
         
         <view class="job-stats">
@@ -125,23 +142,23 @@ onLoad(() => {
         </view>
         
         <view class="job-actions">
-          <u-button
-            type="primary"
+          <button
+            class="action-button view-button"
             size="mini"
             @click="viewApplications(job)"
-          >查看申请</u-button>
+          >查看申请</button>
           
-          <u-button
-            type="warning"
+          <button
+            class="action-button edit-button"
             size="mini"
             @click="editJob(job)"
-          >编辑</u-button>
+          >编辑</button>
           
-          <u-button
-            type="error"
+          <button
+            class="action-button delete-button"
             size="mini"
             @click="deleteJob(job)"
-          >删除</u-button>
+          >删除</button>
         </view>
       </view>
     </view>
@@ -161,10 +178,38 @@ onLoad(() => {
     padding: 20rpx;
     background-color: #fff;
     box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+    
+    .create-button {
+      background-color: #2979ff;
+      color: #fff;
+      font-size: 28rpx;
+      height: 80rpx;
+      line-height: 80rpx;
+      border-radius: 8rpx;
+    }
   }
   
   .job-list {
     padding: 20rpx;
+    
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80rpx 0;
+      
+      .empty-image {
+        width: 120rpx;
+        height: 120rpx;
+        margin-bottom: 20rpx;
+      }
+      
+      .empty-text {
+        font-size: 28rpx;
+        color: #999;
+      }
+    }
     
     .job-item {
       background-color: #fff;
@@ -206,6 +251,14 @@ onLoad(() => {
         flex-wrap: wrap;
         gap: 12rpx;
         margin-bottom: 16rpx;
+        
+        .job-tag {
+          font-size: 24rpx;
+          color: #2979ff;
+          background-color: rgba(41, 121, 255, 0.1);
+          padding: 4rpx 12rpx;
+          border-radius: 4rpx;
+        }
       }
       
       .job-stats {
@@ -220,6 +273,28 @@ onLoad(() => {
         display: flex;
         justify-content: flex-end;
         gap: 16rpx;
+        
+        .action-button {
+          font-size: 24rpx;
+          margin: 0;
+          padding: 0 20rpx;
+          line-height: 1.8;
+          
+          &.view-button {
+            background-color: #2979ff;
+            color: #fff;
+          }
+          
+          &.edit-button {
+            background-color: #ff9900;
+            color: #fff;
+          }
+          
+          &.delete-button {
+            background-color: #ff4d4f;
+            color: #fff;
+          }
+        }
       }
     }
   }

@@ -31,16 +31,17 @@
         </view>
         
         <view class="actions">
-          <u-button v-if="application.status === 'pending'" type="primary" size="mini" @click="handleInterview(application.id)">安排面试</u-button>
-          <u-button v-if="application.status === 'pending'" type="warning" size="mini" @click="handleReject(application.id)">拒绝</u-button>
-          <u-button v-if="application.status === 'interview'" type="info" size="mini" @click="handleViewInterview(application.id)">查看面试</u-button>
-          <u-button type="info" size="mini" @click="handleViewResume(application.id)">查看简历</u-button>
+          <button v-if="application.status === 'pending'" class="action-button primary-button" size="mini" @click="handleInterview(application.id)">安排面试</button>
+          <button v-if="application.status === 'pending'" class="action-button warning-button" size="mini" @click="handleReject(application.id)">拒绝</button>
+          <button v-if="application.status === 'interview'" class="action-button info-button" size="mini" @click="handleViewInterview(application.id)">查看面试</button>
+          <button class="action-button view-button" size="mini" @click="handleViewResume(application.id)">查看简历</button>
         </view>
       </view>
     </view>
     
     <view v-if="applications.length === 0" class="empty-state">
-      <u-empty mode="list" text="暂无申请记录"></u-empty>
+      <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
+      <text class="empty-text">暂无申请记录</text>
     </view>
   </view>
 </template>
@@ -249,11 +250,48 @@ onLoad(() => {
       display: flex;
       gap: 20rpx;
       justify-content: flex-end;
+      
+      .action-button {
+        font-size: 24rpx;
+        margin: 0;
+        padding: 0 20rpx;
+        line-height: 1.8;
+        
+        &.primary-button {
+          background-color: #2979ff;
+          color: #fff;
+        }
+        
+        &.warning-button {
+          background-color: #ff9900;
+          color: #fff;
+        }
+        
+        &.info-button, &.view-button {
+          background-color: #909399;
+          color: #fff;
+        }
+      }
     }
   }
 }
 
 .empty-state {
-  margin-top: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+  
+  .empty-image {
+    width: 120rpx;
+    height: 120rpx;
+    margin-bottom: 20rpx;
+  }
+  
+  .empty-text {
+    font-size: 28rpx;
+    color: #999;
+  }
 }
 </style>

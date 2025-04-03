@@ -1,7 +1,7 @@
 <template>
   <view class="container">
     <view class="header-actions">
-      <u-button type="primary" @click="handleAddJob">发布新职位</u-button>
+      <button class="primary-button" @click="handleAddJob">发布新职位</button>
     </view>
     
     <view class="job-list">
@@ -42,15 +42,16 @@
         </view>
         
         <view class="actions">
-          <u-button type="primary" size="mini" @click="handleEdit(job.id)">编辑</u-button>
-          <u-button type="warning" size="mini" @click="handleToggleStatus(job)">{{ job.status === 'active' ? '下线' : '上线' }}</u-button>
-          <u-button type="error" size="mini" @click="handleDelete(job.id)">删除</u-button>
+          <button class="action-button edit-button" size="mini" @click="handleEdit(job.id)">编辑</button>
+          <button class="action-button toggle-button" size="mini" @click="handleToggleStatus(job)">{{ job.status === 'active' ? '下线' : '上线' }}</button>
+          <button class="action-button delete-button" size="mini" @click="handleDelete(job.id)">删除</button>
         </view>
       </view>
     </view>
     
     <view v-if="jobs.length === 0" class="empty-state">
-      <u-empty mode="list" text="暂无职位"></u-empty>
+      <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
+      <text class="empty-text">暂无职位</text>
     </view>
   </view>
 </template>
@@ -193,6 +194,15 @@ export default {
 
 .header-actions {
   margin-bottom: 30rpx;
+  
+  .primary-button {
+    background-color: #2979ff;
+    color: #fff;
+    font-size: 28rpx;
+    height: 80rpx;
+    line-height: 80rpx;
+    border-radius: 8rpx;
+  }
 }
 
 .job-list {
@@ -256,23 +266,21 @@ export default {
       display: flex;
       justify-content: space-around;
       margin-bottom: 20rpx;
-      padding: 20rpx 0;
-      border-top: 2rpx solid #eee;
-      border-bottom: 2rpx solid #eee;
       
       .stat-item {
         text-align: center;
         
         .number {
+          display: block;
           font-size: 32rpx;
           font-weight: bold;
-          color: #409EFF;
-          margin-bottom: 8rpx;
+          color: #333;
+          margin-bottom: 10rpx;
         }
         
         .label {
           font-size: 24rpx;
-          color: #666;
+          color: #999;
         }
       }
     }
@@ -281,11 +289,48 @@ export default {
       display: flex;
       gap: 20rpx;
       justify-content: flex-end;
+      
+      .action-button {
+        font-size: 24rpx;
+        margin: 0;
+        padding: 0 20rpx;
+        line-height: 1.8;
+        
+        &.edit-button {
+          background-color: #2979ff;
+          color: #fff;
+        }
+        
+        &.toggle-button {
+          background-color: #ff9900;
+          color: #fff;
+        }
+        
+        &.delete-button {
+          background-color: #ff4d4f;
+          color: #fff;
+        }
+      }
     }
   }
 }
 
 .empty-state {
-  margin-top: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+  
+  .empty-image {
+    width: 120rpx;
+    height: 120rpx;
+    margin-bottom: 20rpx;
+  }
+  
+  .empty-text {
+    font-size: 28rpx;
+    color: #999;
+  }
 }
 </style>

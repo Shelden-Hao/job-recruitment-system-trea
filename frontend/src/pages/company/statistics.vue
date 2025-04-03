@@ -30,9 +30,18 @@
       <view class="section-header">
         <text class="section-title">申请趋势</text>
         <view class="time-filter">
-          <text :class="['filter-item', timeRange === 'week' ? 'active' : '']" @click="handleTimeRangeChange('week')">周</text>
-          <text :class="['filter-item', timeRange === 'month' ? 'active' : '']" @click="handleTimeRangeChange('month')">月</text>
-          <text :class="['filter-item', timeRange === 'year' ? 'active' : '']" @click="handleTimeRangeChange('year')">年</text>
+          <view 
+            :class="['filter-item', timeRange === 'week' ? 'active' : '']" 
+            @click="handleTimeRangeChange('week')"
+          >周</view>
+          <view 
+            :class="['filter-item', timeRange === 'month' ? 'active' : '']" 
+            @click="handleTimeRangeChange('month')"
+          >月</view>
+          <view 
+            :class="['filter-item', timeRange === 'year' ? 'active' : '']" 
+            @click="handleTimeRangeChange('year')"
+          >年</view>
         </view>
       </view>
       

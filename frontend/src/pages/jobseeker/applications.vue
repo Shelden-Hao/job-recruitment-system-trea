@@ -31,15 +31,16 @@
         </view>
         
         <view class="actions">
-          <u-button v-if="application.status === 'pending'" type="warning" size="mini" @click="handleCancel(application.id)">撤销申请</u-button>
-          <u-button v-if="application.status === 'interview'" type="primary" size="mini" @click="handleViewInterview(application.id)">查看面试</u-button>
-          <u-button type="info" size="mini" @click="handleViewDetail(application.id)">查看详情</u-button>
+          <button v-if="application.status === 'pending'" class="action-button warning-button" size="mini" @click="handleCancel(application.id)">撤销申请</button>
+          <button v-if="application.status === 'interview'" class="action-button primary-button" size="mini" @click="handleViewInterview(application.id)">查看面试</button>
+          <button class="action-button info-button" size="mini" @click="handleViewDetail(application.id)">查看详情</button>
         </view>
       </view>
     </view>
     
     <view v-if="applications.length === 0" class="empty-state">
-      <u-empty mode="list" text="暂无申请记录"></u-empty>
+      <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
+      <text class="empty-text">暂无申请记录</text>
     </view>
   </view>
 </template>
@@ -248,11 +249,47 @@ onLoad(() => {
       display: flex;
       gap: 20rpx;
       justify-content: flex-end;
+      
+      .action-button {
+        margin: 0;
+        font-size: 24rpx;
+        line-height: 1.8;
+        
+        &.primary-button {
+          background-color: #409eff;
+          color: #fff;
+        }
+        
+        &.warning-button {
+          background-color: #e6a23c;
+          color: #fff;
+        }
+        
+        &.info-button {
+          background-color: #909399;
+          color: #fff;
+        }
+      }
     }
   }
 }
 
 .empty-state {
-  margin-top: 100rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60rpx 0;
+  
+  .empty-image {
+    width: 120rpx;
+    height: 120rpx;
+    margin-bottom: 20rpx;
+  }
+  
+  .empty-text {
+    font-size: 28rpx;
+    color: #999;
+  }
 }
 </style>

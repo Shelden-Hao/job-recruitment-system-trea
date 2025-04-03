@@ -75,7 +75,7 @@ const handleLogout = () => {
     success: (res) => {
       if (res.confirm) {
         // 调用auth store的logout方法
-        authStore.logout();
+        // authStore.logout();
         // 跳转到登录页
         uni.reLaunch({
           url: '/pages/login/login'

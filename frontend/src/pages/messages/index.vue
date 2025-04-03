@@ -20,74 +20,98 @@
     </view>
     
     <view v-if="messages.length === 0" class="empty-state">
-      <u-empty mode="message" text="暂无消息"></u-empty>
+      <view class="empty-content">
+        <image src="/static/images/empty-message.png" mode="aspectFit" class="empty-image"></image>
+        <text class="empty-text">暂无消息</text>
+      </view>
     </view>
   </view>
 </template>
 
-<script>
-import { onLoad } from '@dcloudio/uni-app'
+<script setup>
+import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
 
-export default {
-  setup() {
-    const authStore = useAuthStore();
-    const messages = ref([]);
-    
-    const fetchMessages = async () => {
-      try {
-        // TODO: 实现获取消息列表的API调用
-        messages.value = [
-          {
-            id: 1,
-            name: '张三',
-            avatar: '/static/images/default-avatar.png',
-            lastMessage: '您好，请问您对这个职位感兴趣吗？',
-            lastTime: '10:30',
-            unread: true,
-            unreadCount: 2
-          },
-          {
-            id: 2,
-            name: '李四',
-            avatar: '/static/images/default-avatar.png',
-            lastMessage: '好的，期待与您的合作',
-            lastTime: '昨天',
-            unread: false,
-            unreadCount: 0
-          }
-        ];
-      } catch (error) {
-        console.error('获取消息列表失败:', error);
-        uni.showToast({
-          title: '获取消息列表失败',
-          icon: 'none'
-        });
+const messages = ref([]);
+const loading = ref(false);
+
+// 获取消息列表（使用假数据）
+const fetchMessages = () => {
+  loading.value = true;
+  
+  // 模拟API加载延迟
+  setTimeout(() => {
+    messages.value = [
+      {
+        id: 1,
+        name: '张三',
+        avatar: '/static/images/default-avatar.png',
+        lastMessage: '您好，我看到您对前端开发工程师职位感兴趣',
+        lastTime: '10:30',
+        unread: true,
+        unreadCount: 2
+      },
+      {
+        id: 2,
+        name: '李四',
+        avatar: '/static/images/default-avatar.png',
+        lastMessage: '这个职位需要3年以上的前端开发经验，熟悉Vue和React框架',
+        lastTime: '昨天',
+        unread: false,
+        unreadCount: 0
+      },
+      {
+        id: 3,
+        name: '王五',
+        avatar: '/static/images/default-avatar.png',
+        lastMessage: '已收到您的简历，我们会尽快安排面试',
+        lastTime: '周一',
+        unread: true,
+        unreadCount: 1
+      },
+      {
+        id: 4,
+        name: '赵六',
+        avatar: '/static/images/default-avatar.png',
+        lastMessage: '您好，请问您有Java开发经验吗？',
+        lastTime: '上周五',
+        unread: false,
+        unreadCount: 0
+      },
+      {
+        id: 5,
+        name: '科技有限公司',
+        avatar: '/static/images/company-logo.png',
+        lastMessage: '恭喜您通过我们的面试，请问您什么时候可以入职？',
+        lastTime: '2024/03/20',
+        unread: true,
+        unreadCount: 3
       }
-    };
+    ];
     
-    const goToChat = (messageId) => {
-      uni.navigateTo({
-        url: `/pages/message/chat?id=${messageId}`
-      });
-    };
-    
-    onLoad(() => {
-      fetchMessages();
-    });
-    
-    return {
-      messages,
-      goToChat
-    };
-  }
+    loading.value = false;
+  }, 500);
 };
+
+// 跳转到聊天详情页
+const goToChat = (messageId) => {
+  // 直接通过URL参数传递消息ID
+  uni.navigateTo({
+    url: `/pages/message/chat`
+  });
+};
+
+// 页面加载时获取消息列表
+onLoad(() => {
+  fetchMessages();
+});
 </script>
 
 <style lang="scss" scoped>
 .container {
   padding: 20rpx;
+  background-color: #f5f5f5;
+  min-height: 100vh;
 }
 
 .message-list {
@@ -129,6 +153,7 @@ export default {
     
     .message-info {
       flex: 1;
+      overflow: hidden;
       
       .message-header {
         display: flex;
@@ -152,7 +177,11 @@ export default {
         .preview-text {
           font-size: 26rpx;
           color: #666;
-          @include text-ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          display: block;
+          width: 100%;
         }
       }
     }
@@ -164,5 +193,22 @@ export default {
   align-items: center;
   justify-content: center;
   height: 400rpx;
+  
+  .empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    .empty-image {
+      width: 200rpx;
+      height: 200rpx;
+      margin-bottom: 20rpx;
+    }
+    
+    .empty-text {
+      font-size: 28rpx;
+      color: #909399;
+    }
+  }
 }
 </style>

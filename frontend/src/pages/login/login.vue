@@ -7,29 +7,37 @@
       </view>
       
       <view class="form-section">
-        <u-form :model="formData" ref="form">
-          <u-form-item label="账号" prop="username">
-            <u-input
+        <form @submit="handleLogin">
+          <view class="form-item">
+            <text class="form-label">账号</text>
+            <input
+              class="form-input"
               v-model="formData.username"
               placeholder="请输入账号"
-              :border="true"
+              name="username"
             />
-          </u-form-item>
+          </view>
           
-          <u-form-item label="密码" prop="password">
-            <u-input
+          <view class="form-item">
+            <text class="form-label">密码</text>
+            <input
+              class="form-input"
               v-model="formData.password"
               type="password"
               placeholder="请输入密码"
-              :border="true"
+              name="password"
             />
-          </u-form-item>
-        </u-form>
-        
-        <view class="button-group">
-          <u-button type="primary" @click="handleLogin" :loading="loading">登录</u-button>
-          <view class="register-link" @click="goToRegister">还没有账号？立即注册</view>
-        </view>
+          </view>
+          
+          <view class="button-group">
+            <button 
+              class="login-button" 
+              form-type="submit" 
+              :loading="loading"
+            >登录</button>
+            <view class="register-link" @click="goToRegister">还没有账号？立即注册</view>
+          </view>
+        </form>
       </view>
     </view>
   </view>
@@ -42,7 +50,6 @@ import { useAuthStore } from '@/stores/auth';
 export default {
   setup() {
     const authStore = useAuthStore();
-    const form = ref(null);
     const loading = ref(false);
     
     const formData = reactive({
@@ -50,26 +57,37 @@ export default {
       password: ''
     });
     
-    const rules = {
-      username: [{
-        required: true,
-        message: '请输入账号',
-        trigger: ['blur', 'change']
-      }],
-      password: [{
-        required: true,
-        message: '请输入密码',
-        trigger: ['blur', 'change']
-      }]
+    const validateForm = () => {
+      if (!formData.username) {
+        uni.showToast({
+          title: '请输入账号',
+          icon: 'none'
+        });
+        return false;
+      }
+      
+      if (!formData.password) {
+        uni.showToast({
+          title: '请输入密码',
+          icon: 'none'
+        });
+        return false;
+      }
+      
+      return true;
     };
     
     const handleLogin = async () => {
+      if (!validateForm()) return;
+      
       try {
         loading.value = true;
-        await form.value.validate();
         await authStore.login(formData);
+        uni.showToast({
+          title: '登录成功',
+          icon: 'success'
+        });
       } catch (error) {
-        if (error.errors) return; // 表单验证错误
         uni.showToast({
           title: error.message || '登录失败',
           icon: 'none'
@@ -87,8 +105,6 @@ export default {
     
     return {
       formData,
-      rules,
-      form,
       loading,
       handleLogin,
       goToRegister
@@ -134,8 +150,41 @@ export default {
 }
 
 .form-section {
+  form {
+    width: 100%;
+  }
+  
+  .form-item {
+    margin-bottom: 20rpx;
+    
+    .form-label {
+      display: block;
+      font-size: 28rpx;
+      color: #303133;
+      margin-bottom: 8rpx;
+    }
+    
+    .form-input {
+      width: 100%;
+      height: 80rpx;
+      border-bottom: 1px solid #dcdfe6;
+      font-size: 28rpx;
+      padding: 0 10rpx;
+    }
+  }
+  
   .button-group {
     margin-top: 40rpx;
+    
+    .login-button {
+      width: 100%;
+      height: 80rpx;
+      line-height: 80rpx;
+      background-color: #409EFF;
+      color: #ffffff;
+      border-radius: 8rpx;
+      font-size: 30rpx;
+    }
     
     .register-link {
       text-align: center;

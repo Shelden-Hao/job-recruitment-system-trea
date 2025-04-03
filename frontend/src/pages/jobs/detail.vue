@@ -34,14 +34,15 @@
     </view>
     
     <view class="action-bar">
-      <u-button 
+      <button 
+        class="apply-button" 
         type="primary" 
         @click="handleApply"
         :loading="loading"
         :disabled="hasApplied"
       >
         {{ hasApplied ? '已申请' : '立即申请' }}
-      </u-button>
+      </button>
     </view>
   </view>
 </template>
@@ -251,5 +252,19 @@ export default {
   background: #fff;
   padding: 20rpx 30rpx;
   box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.1);
+  
+  .apply-button {
+    width: 100%;
+    height: 80rpx;
+    font-size: 30rpx;
+    background-color: #409EFF;
+    border-radius: 8rpx;
+    color: #fff;
+    
+    &[disabled] {
+      background-color: #a0cfff;
+      color: #ffffff;
+    }
+  }
 }
 </style>
