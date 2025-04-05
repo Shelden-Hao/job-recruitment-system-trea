@@ -2,10 +2,9 @@
   <view class="container">
     <view class="login-card">
       <view class="logo-section">
-        <image src="/static/images/logo.png" mode="aspectFit" class="logo"></image>
-        <text class="title">欢迎登录</text>
+        <image src="/static/images/logo.jpg" mode="aspectFit" class="logo"></image>
       </view>
-      
+
       <view class="form-section">
         <form @submit="handleLogin">
           <view class="form-item">
@@ -17,7 +16,7 @@
               name="username"
             />
           </view>
-          
+
           <view class="form-item">
             <text class="form-label">密码</text>
             <input
@@ -28,11 +27,11 @@
               name="password"
             />
           </view>
-          
+
           <view class="button-group">
-            <button 
-              class="login-button" 
-              form-type="submit" 
+            <button
+              class="login-button"
+              form-type="submit"
               :loading="loading"
             >登录</button>
             <view class="register-link" @click="goToRegister">还没有账号？立即注册</view>
@@ -51,12 +50,12 @@ export default {
   setup() {
     const authStore = useAuthStore();
     const loading = ref(false);
-    
+
     const formData = reactive({
       username: '',
       password: ''
     });
-    
+
     const validateForm = () => {
       if (!formData.username) {
         uni.showToast({
@@ -65,7 +64,7 @@ export default {
         });
         return false;
       }
-      
+
       if (!formData.password) {
         uni.showToast({
           title: '请输入密码',
@@ -73,13 +72,13 @@ export default {
         });
         return false;
       }
-      
+
       return true;
     };
-    
+
     const handleLogin = async () => {
       if (!validateForm()) return;
-      
+
       try {
         loading.value = true;
         await authStore.login(formData);
@@ -96,13 +95,13 @@ export default {
         loading.value = false;
       }
     };
-    
+
     const goToRegister = () => {
       uni.navigateTo({
         url: '/pages/register/register'
       });
     };
-    
+
     return {
       formData,
       loading,
@@ -135,13 +134,13 @@ export default {
 .logo-section {
   text-align: center;
   margin-bottom: 40rpx;
-  
+
   .logo {
     width: 160rpx;
     height: 160rpx;
     margin-bottom: 20rpx;
   }
-  
+
   .title {
     font-size: 36rpx;
     font-weight: bold;
@@ -153,17 +152,17 @@ export default {
   form {
     width: 100%;
   }
-  
+
   .form-item {
     margin-bottom: 20rpx;
-    
+
     .form-label {
       display: block;
       font-size: 28rpx;
       color: #303133;
       margin-bottom: 8rpx;
     }
-    
+
     .form-input {
       width: 100%;
       height: 80rpx;
@@ -172,10 +171,10 @@ export default {
       padding: 0 10rpx;
     }
   }
-  
+
   .button-group {
     margin-top: 40rpx;
-    
+
     .login-button {
       width: 100%;
       height: 80rpx;
@@ -185,7 +184,7 @@ export default {
       border-radius: 8rpx;
       font-size: 30rpx;
     }
-    
+
     .register-link {
       text-align: center;
       margin-top: 20rpx;
