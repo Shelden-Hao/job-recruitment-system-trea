@@ -75,40 +75,9 @@
       }
     },
     {
-      "path": "pages/jobseeker/index",
-      "style": {
-        "navigationBarTitleText": "求职者中心"
-      }
-    },
-
-    {
       "path": "pages/jobseeker/applications",
       "style": {
         "navigationBarTitleText": "我的申请"
-      }
-    },
-    {
-      "path": "pages/company/index",
-      "style": {
-        "navigationBarTitleText": "企业中心"
-      }
-    },
-    {
-      "path": "pages/company/jobs",
-      "style": {
-        "navigationBarTitleText": "职位管理"
-      }
-    },
-    {
-      "path": "pages/company/applications",
-      "style": {
-        "navigationBarTitleText": "申请管理"
-      }
-    },
-    {
-      "path": "pages/company/statistics",
-      "style": {
-        "navigationBarTitleText": "数据统计"
       }
     }
   ],
