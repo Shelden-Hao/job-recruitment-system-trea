@@ -39,6 +39,12 @@
       }
     },
     {
+      "path": "pages/profile/edit",
+      "style": {
+        "navigationBarTitleText": "编辑个人资料"
+      }
+    },
+    {
       "path": "pages/messages/index",
       "style": {
         "navigationBarTitleText": "消息中心"
