@@ -45,6 +45,12 @@
       }
     },
     {
+      "path": "pages/jobseeker/resume",
+      "style": {
+        "navigationBarTitleText": "我的简历"
+      }
+    },
+    {
       "path": "pages/messages/index",
       "style": {
         "navigationBarTitleText": "消息中心"
@@ -63,17 +69,18 @@
       }
     },
     {
+      "path": "pages/interview/index",
+      "style": {
+        "navigationBarTitleText": "面试详情"
+      }
+    },
+    {
       "path": "pages/jobseeker/index",
       "style": {
         "navigationBarTitleText": "求职者中心"
       }
     },
-    {
-      "path": "pages/jobseeker/resume",
-      "style": {
-        "navigationBarTitleText": "我的简历"
-      }
-    },
+
     {
       "path": "pages/jobseeker/applications",
       "style": {

@@ -6,7 +6,7 @@
           <text class="job-title">{{ application.jobTitle }}</text>
           <text class="application-status" :class="application.status">{{ getStatusText(application.status) }}</text>
         </view>
-        
+
         <view class="company-info">
           <image :src="application.companyLogo" mode="aspectFit" class="company-logo"></image>
           <view class="company-detail">
@@ -14,7 +14,7 @@
             <text class="job-salary">{{ application.salary }}</text>
           </view>
         </view>
-        
+
         <view class="application-info">
           <view class="info-item">
             <text class="label">申请时间：</text>
@@ -29,7 +29,7 @@
             <text class="value">{{ application.interviewTime }}</text>
           </view>
         </view>
-        
+
         <view class="actions">
           <button v-if="application.status === 'pending'" class="action-button warning-button" size="mini" @click="handleCancel(application.id)">撤销申请</button>
           <button v-if="application.status === 'interview'" class="action-button primary-button" size="mini" @click="handleViewInterview(application.id)">查看面试</button>
@@ -37,7 +37,7 @@
         </view>
       </view>
     </view>
-    
+
     <view v-if="applications.length === 0" class="empty-state">
       <image src="/static/empty.png" mode="aspectFit" class="empty-image"></image>
       <text class="empty-text">暂无申请记录</text>
@@ -127,7 +127,8 @@ const handleCancel = async (applicationId) => {
 
 const handleViewInterview = (applicationId) => {
   uni.navigateTo({
-    url: `/pages/interviews/detail?id=${applicationId}`
+    // url: `/pages/interview/index?id=${applicationId}` // 先用假数据
+    url: `/pages/interview/index`
   });
 };
 
@@ -154,117 +155,117 @@ onLoad(() => {
     padding: 30rpx;
     margin-bottom: 30rpx;
     box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
-    
+
     .application-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20rpx;
-      
+
       .job-title {
         font-size: 32rpx;
         font-weight: bold;
         color: #333;
       }
-      
+
       .application-status {
         font-size: 24rpx;
         padding: 4rpx 12rpx;
         border-radius: 4rpx;
-        
+
         &.pending {
           color: #e6a23c;
           background: rgba(230, 162, 60, 0.1);
         }
-        
+
         &.rejected {
           color: #f56c6c;
           background: rgba(245, 108, 108, 0.1);
         }
-        
+
         &.interview {
           color: #409eff;
           background: rgba(64, 158, 255, 0.1);
         }
-        
+
         &.completed {
           color: #67c23a;
           background: rgba(103, 194, 58, 0.1);
         }
-        
+
         &.cancelled {
           color: #909399;
           background: rgba(144, 147, 153, 0.1);
         }
       }
     }
-    
+
     .company-info {
       display: flex;
       align-items: center;
       margin-bottom: 20rpx;
-      
+
       .company-logo {
         width: 80rpx;
         height: 80rpx;
         margin-right: 20rpx;
         border-radius: 8rpx;
       }
-      
+
       .company-detail {
         .company-name {
           font-size: 28rpx;
           color: #333;
           margin-bottom: 8rpx;
         }
-        
+
         .job-salary {
           font-size: 24rpx;
           color: #409eff;
         }
       }
     }
-    
+
     .application-info {
       margin-bottom: 20rpx;
-      
+
       .info-item {
         display: flex;
         margin-bottom: 10rpx;
-        
+
         .label {
           font-size: 28rpx;
           color: #666;
           margin-right: 10rpx;
         }
-        
+
         .value {
           font-size: 28rpx;
           color: #333;
         }
       }
     }
-    
+
     .actions {
       display: flex;
       gap: 20rpx;
       justify-content: flex-end;
-      
+
       .action-button {
         margin: 0;
         font-size: 24rpx;
         line-height: 1.8;
-        
+
         &.primary-button {
           background-color: #409eff;
           color: #fff;
         }
-        
+
         &.warning-button {
           background-color: #e6a23c;
           color: #fff;
         }
-        
+
         &.info-button {
           background-color: #909399;
           color: #fff;
@@ -280,13 +281,13 @@ onLoad(() => {
   align-items: center;
   justify-content: center;
   padding: 60rpx 0;
-  
+
   .empty-image {
     width: 120rpx;
     height: 120rpx;
     margin-bottom: 20rpx;
   }
-  
+
   .empty-text {
     font-size: 28rpx;
     color: #999;

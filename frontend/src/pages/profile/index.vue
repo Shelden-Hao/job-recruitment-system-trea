@@ -6,10 +6,11 @@
         <text class="username">{{ userInfo.username }}</text>
         <text class="role">{{ userInfo.role === 'jobseeker' ? '求职者' : '企业' }}</text>
       </view>
-      
+
       <view class="info-section">
         <button type="primary" class="btn" @click="goToEditProfile">个人资料</button>
         <button type="default" class="btn" v-if="isJobSeeker" @click="goToResume">我的简历</button>
+        <button type="default" class="btn" v-if="isJobSeeker" @click="goToApplications">我的申请</button>
         <button type="warn" class="btn" @click="handleLogout">退出登录</button>
       </view>
     </view>
@@ -67,6 +68,13 @@ const goToResume = () => {
   });
 };
 
+// 跳转到我的申请页面
+const goToApplications = () => {
+  uni.navigateTo({
+    url: '/pages/jobseeker/applications'
+  });
+}
+
 // 处理退出登录
 const handleLogout = () => {
   uni.showModal({
@@ -107,21 +115,21 @@ onLoad(() => {
   flex-direction: column;
   align-items: center;
   padding: 40rpx 0;
-  
+
   .avatar {
     width: 160rpx;
     height: 160rpx;
     border-radius: 50%;
     margin-bottom: 20rpx;
   }
-  
+
   .username {
     font-size: 32rpx;
     font-weight: bold;
     color: #333;
     margin-bottom: 10rpx;
   }
-  
+
   .role {
     font-size: 26rpx;
     color: #666;
@@ -130,7 +138,7 @@ onLoad(() => {
 
 .info-section {
   margin: 30rpx 0;
-  
+
   .btn {
     margin-bottom: 20rpx;
   }
