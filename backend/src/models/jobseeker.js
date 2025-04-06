@@ -7,9 +7,10 @@ module.exports = (sequelize) => {
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true
     },
-    userId: {
+    user_id: {
       type: DataTypes.UUID,
       allowNull: false,
+      // 移除这个引用，避免同步问题
       references: {
         model: 'Users',
         key: 'id'
@@ -17,7 +18,7 @@ module.exports = (sequelize) => {
     },
     fullName: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     gender: {
       type: DataTypes.ENUM('male', 'female', 'other'),
@@ -69,8 +70,22 @@ module.exports = (sequelize) => {
     }
   }, {
     timestamps: true,
-    paranoid: true // 软删除
+    paranoid: true, // 软删除
+    tableName: 'jobseekers', // 明确指定表名为小写
+    underscored: true // 确保字段名使用下划线命名法
   });
+
+  JobSeeker.associate = (models) => {
+    JobSeeker.belongsTo(models.User, {
+      foreignKey: 'user_id',
+      constraints: false
+    });
+    JobSeeker.hasMany(models.Application, {
+      foreignKey: 'jobseeker_id',
+      as: 'jobSeekerApplications',
+      constraints: false
+    });
+  };
 
   return JobSeeker;
 };

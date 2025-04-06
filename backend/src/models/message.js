@@ -3,72 +3,69 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   const Message = sequelize.define('Message', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
       primaryKey: true
     },
-    senderId: {
-      type: DataTypes.UUID,
+    sender_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      }
+      comment: '发送者ID'
     },
-    receiverId: {
-      type: DataTypes.UUID,
+    receiver_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'Users',
-        key: 'id'
-      }
+      comment: '接收者ID'
     },
     content: {
       type: DataTypes.TEXT,
       allowNull: false,
       comment: '消息内容'
     },
-    contentType: {
-      type: DataTypes.ENUM('text', 'image', 'file'),
+    content_type: {
+      type: DataTypes.STRING(20),
       defaultValue: 'text',
-      comment: '消息类型'
+      comment: '内容类型: text, image, file'
     },
-    fileUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      comment: '文件或图片URL'
-    },
-    isRead: {
+    is_read: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
       comment: '是否已读'
     },
-    readAt: {
+    read_at: {
       type: DataTypes.DATE,
       allowNull: true,
       comment: '阅读时间'
     },
-    relatedTo: {
-      type: DataTypes.UUID,
+    related_to: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
-      comment: '相关联的实体ID（如职位、申请等）'
+      comment: '关联ID，例如职位ID或申请ID'
     },
-    relatedType: {
-      type: DataTypes.STRING,
+    related_type: {
+      type: DataTypes.STRING(20),
       allowNull: true,
-      comment: '相关联的实体类型'
+      comment: '关联类型：job, application, etc'
+    },
+    conversation_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      comment: '会话ID'
+    },
+    created_at: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
     }
   }, {
+    tableName: 'messages',
     timestamps: true,
-    indexes: [
-      {
-        fields: ['senderId', 'receiverId']
-      },
-      {
-        fields: ['receiverId', 'isRead']
-      }
-    ]
+    underscored: true
   });
+
+  Message.associate = (models) => {
+    Message.belongsTo(models.User, { foreignKey: 'sender_id', as: 'sender' });
+    Message.belongsTo(models.User, { foreignKey: 'receiver_id', as: 'receiver' });
+  };
 
   return Message;
 };

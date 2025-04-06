@@ -3,20 +3,17 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   const Job = sequelize.define('Job', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
       primaryKey: true
     },
-    companyId: {
-      type: DataTypes.UUID,
+    company_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'Companies',
-        key: 'id'
-      }
+      comment: '所属公司ID'
     },
     title: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false,
       comment: '职位名称'
     },
@@ -25,81 +22,51 @@ module.exports = (sequelize) => {
       allowNull: false,
       comment: '职位描述'
     },
-    requirements: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: '职位要求'
-    },
-    responsibilities: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: '工作职责'
-    },
     location: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(100),
       allowNull: false,
       comment: '工作地点'
     },
-    salaryMin: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      comment: '最低薪资（月薪）'
-    },
-    salaryMax: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      comment: '最高薪资（月薪）'
-    },
-    jobType: {
-      type: DataTypes.ENUM('full-time', 'part-time', 'internship', 'contract'),
+    salary_range: {
+      type: DataTypes.STRING(50),
       allowNull: false,
-      defaultValue: 'full-time',
-      comment: '工作类型'
+      comment: '薪资范围（例如：15k-25k）'
     },
-    experienceRequired: {
-      type: DataTypes.STRING,
+    publish_date: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      comment: '发布日期'
+    },
+    experience: {
+      type: DataTypes.STRING(50),
       allowNull: true,
-      comment: '要求工作经验'
+      comment: '经验要求（例如：3-5年）'
     },
-    educationRequired: {
-      type: DataTypes.STRING,
+    education: {
+      type: DataTypes.STRING(50),
       allowNull: true,
-      comment: '要求学历'
+      comment: '学历要求（例如：本科及以上）'
     },
-    skills: {
-      type: DataTypes.JSON,
+    tags: {
+      type: DataTypes.STRING(255),
       allowNull: true,
-      comment: '所需技能'
-    },
-    benefits: {
-      type: DataTypes.JSON,
-      allowNull: true,
-      comment: '福利待遇'
-    },
-    deadline: {
-      type: DataTypes.DATEONLY,
-      allowNull: true,
-      comment: '截止日期'
-    },
-    status: {
-      type: DataTypes.ENUM('active', 'closed', 'draft'),
-      defaultValue: 'active',
-      comment: '职位状态'
-    },
-    views: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-      comment: '浏览次数'
-    },
-    applicationCount: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-      comment: '申请人数'
+      comment: '职位标签，用逗号分隔（例如：React, Vue, 前端开发）'
     }
   }, {
+    tableName: 'jobs',
     timestamps: true,
-    paranoid: true // 软删除
+    underscored: true
   });
+
+  Job.associate = (models) => {
+    Job.belongsTo(models.Company, { foreignKey: 'company_id' });
+    Job.hasMany(models.Application, { foreignKey: 'job_id', as: 'jobApplications' });
+    Job.belongsToMany(models.Skill, { 
+      through: 'job_skills', 
+      foreignKey: 'job_id', 
+      otherKey: 'skill_id' 
+    });
+  };
 
   return Job;
 };

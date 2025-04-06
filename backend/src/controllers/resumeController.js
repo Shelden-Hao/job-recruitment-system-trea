@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const { JobSeeker, Job, Application, User } = require('../models');
+const { JobSeeker, Job, Application, User, Company } = require('../models');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 
@@ -296,7 +296,7 @@ exports.getApplications = async (req, res) => {
     }
     
     // 获取申请列表
-    const applications = await Application.findAll({
+    const applicationResults = await Application.findAll({
       where: { jobseekerId: jobseeker.id },
       include: [{
         model: Job,
@@ -306,6 +306,36 @@ exports.getApplications = async (req, res) => {
         }]
       }],
       order: [['createdAt', 'DESC']]
+    });
+    
+    // 转换数据格式以匹配前端期望的结构
+    const applications = applicationResults.map(application => {
+      const formattedDate = new Date(application.createdAt).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).replace(/\//g, '-');
+      
+      return {
+        id: application.id,
+        job: {
+          id: application.Job.id,
+          title: application.Job.title,
+          company: {
+            id: application.Job.Company.id,
+            name: application.Job.Company.name,
+            logo: application.Job.Company.logo
+          }
+        },
+        status: application.status,
+        createdAt: formattedDate,
+        resumeUrl: application.resumeUrl,
+        coverLetter: application.coverLetter,
+        hrNotes: application.hrNotes,
+        rejectionReason: application.rejectionReason
+      };
     });
     
     res.json(applications);
@@ -333,7 +363,7 @@ exports.getCompanyApplications = async (req, res) => {
     const jobIds = jobs.map(job => job.id);
     
     // 获取这些职位的申请
-    const applications = await Application.findAll({
+    const applicationResults = await Application.findAll({
       where: { jobId: { [Op.in]: jobIds } },
       include: [{
         model: Job,
@@ -342,10 +372,44 @@ exports.getCompanyApplications = async (req, res) => {
         model: JobSeeker,
         include: [{
           model: User,
-          attributes: ['username', 'email']
+          attributes: ['username', 'email', 'avatar']
         }]
       }],
       order: [['createdAt', 'DESC']]
+    });
+    
+    // 转换数据格式以匹配前端期望的结构
+    const applications = applicationResults.map(application => {
+      const formattedDate = new Date(application.createdAt).toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).replace(/\//g, '-');
+      
+      return {
+        id: application.id,
+        job: {
+          id: application.Job.id,
+          title: application.Job.title,
+          location: application.Job.location
+        },
+        jobseeker: {
+          id: application.JobSeeker.id,
+          name: application.JobSeeker.fullName,
+          avatar: application.JobSeeker.User.avatar,
+          email: application.JobSeeker.User.email,
+          username: application.JobSeeker.User.username
+        },
+        status: application.status,
+        createdAt: formattedDate,
+        resumeUrl: application.resumeUrl,
+        coverLetter: application.coverLetter,
+        matchScore: application.matchScore,
+        hrNotes: application.hrNotes,
+        rejectionReason: application.rejectionReason
+      };
     });
     
     res.json(applications);

@@ -191,7 +191,7 @@ exports.getCompanyStatistics = async (req, res) => {
     });
 
     // 获取申请状态分布
-    const applicationStatusDistribution = await Application.findAll({
+    const applicationStatusResults = await Application.findAll({
       attributes: [
         'status',
         [sequelize.fn('COUNT', sequelize.col('Application.id')), 'count']
@@ -204,67 +204,95 @@ exports.getCompanyStatistics = async (req, res) => {
       group: ['status'],
       raw: true
     });
+    
+    // 重新格式化申请状态分布
+    const applicationStatusDistribution = {
+      labels: [],
+      data: [],
+      colors: [
+        '#4CAF50', // accepted
+        '#FFC107', // pending
+        '#2196F3', // interview
+        '#9C27B0', // offer
+        '#F44336', // rejected
+        '#607D8B'  // withdrawn
+      ]
+    };
+    
+    const statusLabels = {
+      'pending': '待审核',
+      'reviewed': '已审核',
+      'interview': '面试中',
+      'offer': '已录用',
+      'rejected': '已拒绝',
+      'withdrawn': '已撤回'
+    };
+    
+    applicationStatusResults.forEach(item => {
+      applicationStatusDistribution.labels.push(statusLabels[item.status] || item.status);
+      applicationStatusDistribution.data.push(parseInt(item.count));
+    });
 
-    // 获取面试通过率
-    const interviewResults = await Interview.findAll({
+    // 获取职位申请趋势（按月统计）
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 5);
+    
+    const applicationTrendResults = await sequelize.query(`
+      SELECT 
+        DATE_FORMAT(Application.createdAt, '%Y-%m') AS month,
+        COUNT(*) AS count
+      FROM Applications AS Application
+      INNER JOIN Jobs AS Job ON Application.jobId = Job.id
+      WHERE Job.companyId = ?
+      AND Application.createdAt >= ?
+      GROUP BY month
+      ORDER BY month ASC
+    `, {
+      replacements: [companyId, startDate],
+      type: sequelize.QueryTypes.SELECT
+    });
+    
+    // 转换为前端需要的格式
+    const applicationTrend = {
+      labels: [],
+      data: []
+    };
+    
+    applicationTrendResults.forEach(item => {
+      const [year, month] = item.month.split('-');
+      applicationTrend.labels.push(`${year}年${month}月`);
+      applicationTrend.data.push(parseInt(item.count));
+    });
+
+    // 获取各职位申请量排名
+    const jobApplications = await Job.findAll({
       attributes: [
-        'result',
-        [sequelize.fn('COUNT', sequelize.col('Interview.id')), 'count']
+        'id',
+        'title',
+        'applications',
+        'views'
       ],
-      include: [{
-        model: Application,
-        attributes: [],
-        include: [{
-          model: Job,
-          where: { companyId },
-          attributes: []
-        }]
-      }],
-      where: {
-        result: { [Op.ne]: 'pending' }
-      },
-      group: ['result'],
+      where: { companyId },
+      order: [['applications', 'DESC']],
+      limit: 10,
       raw: true
     });
-
-    // 计算面试通过率
-    const passedInterviews = interviewResults.find(r => r.result === 'pass')?.count || 0;
-    const totalCompletedInterviews = interviewResults.reduce((sum, item) => sum + parseInt(item.count), 0);
-    const passRate = totalCompletedInterviews > 0 ? (passedInterviews / totalCompletedInterviews) * 100 : 0;
-
-    // 获取职位浏览量趋势（按周统计）
-    const viewsTrend = await sequelize.query(`
-      SELECT 
-        DATE_FORMAT(createdAt, '%Y-%u') AS week,
-        SUM(views) AS totalViews
-      FROM Jobs
-      WHERE companyId = :companyId
-      GROUP BY week
-      ORDER BY week DESC
-      LIMIT 12;
-    `, { 
-      replacements: { companyId },
-      type: sequelize.QueryTypes.SELECT 
-    });
-
-    // 获取申请量趋势（按周统计）
-    const applicationsTrend = await sequelize.query(`
-      SELECT 
-        DATE_FORMAT(Applications.createdAt, '%Y-%u') AS week,
-        COUNT(Applications.id) AS totalApplications
-      FROM Applications
-      JOIN Jobs ON Applications.jobId = Jobs.id
-      WHERE Jobs.companyId = :companyId
-      GROUP BY week
-      ORDER BY week DESC
-      LIMIT 12;
-    `, { 
-      replacements: { companyId },
-      type: sequelize.QueryTypes.SELECT 
+    
+    // 转换为前端需要的格式
+    const jobApplicationRanking = {
+      labels: [],
+      data: [],
+      jobIds: []
+    };
+    
+    jobApplications.forEach(job => {
+      jobApplicationRanking.labels.push(job.title);
+      jobApplicationRanking.data.push(job.applications);
+      jobApplicationRanking.jobIds.push(job.id);
     });
 
     // 获取企业评价统计
-    const reviewStats = await Review.findAll({
+    const reviewResults = await Review.findAll({
       attributes: [
         [sequelize.fn('AVG', sequelize.col('rating')), 'averageRating'],
         [sequelize.fn('COUNT', sequelize.col('id')), 'totalReviews']
@@ -276,18 +304,51 @@ exports.getCompanyStatistics = async (req, res) => {
       },
       raw: true
     });
+    
+    const averageRating = reviewResults[0].averageRating ? parseFloat(reviewResults[0].averageRating).toFixed(1) : '0.0';
+    const totalReviews = parseInt(reviewResults[0].totalReviews || 0);
+    
+    // 获取评分分布
+    const ratingDistributionResults = await Review.findAll({
+      attributes: [
+        'rating',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+      ],
+      where: {
+        targetId: companyId,
+        targetType: 'company',
+        status: 'approved'
+      },
+      group: ['rating'],
+      order: [['rating', 'DESC']],
+      raw: true
+    });
+    
+    // 转换为前端需要的格式
+    const ratingDistribution = {
+      labels: ['5星', '4星', '3星', '2星', '1星'],
+      data: [0, 0, 0, 0, 0]
+    };
+    
+    ratingDistributionResults.forEach(item => {
+      const ratingIndex = 5 - item.rating; // 5星对应索引0, 1星对应索引4
+      if (ratingIndex >= 0 && ratingIndex < 5) {
+        ratingDistribution.data[ratingIndex] = parseInt(item.count);
+      }
+    });
 
-    // 返回统计数据
     res.json({
-      totalJobs,
-      totalApplications,
-      totalInterviews,
+      overview: {
+        totalJobs,
+        totalApplications,
+        totalInterviews,
+        averageRating,
+        totalReviews
+      },
       applicationStatusDistribution,
-      interviewResults,
-      passRate: parseFloat(passRate.toFixed(2)),
-      viewsTrend,
-      applicationsTrend,
-      reviewStats: reviewStats[0]
+      applicationTrend,
+      jobApplicationRanking,
+      ratingDistribution
     });
   } catch (error) {
     console.error('获取企业统计数据错误:', error);

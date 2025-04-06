@@ -12,17 +12,23 @@ exports.register = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { username, email, password, role, phone } = req.body;
+    const { username, email, password, role } = req.body;
 
     // 检查用户名和邮箱是否已存在
+    // const existingUser = await User.findOne({
+    //   where: {
+    //     [User.sequelize.Op.or]: [
+    //       { username },
+    //       { email }
+    //     ]
+    //   }
+    // });
+    // 检查用户名是否已存在
     const existingUser = await User.findOne({
       where: {
-        [User.sequelize.Op.or]: [
-          { username },
-          { email }
-        ]
+        username
       }
-    });
+    })
 
     if (existingUser) {
       return res.status(400).json({ message: '用户名或邮箱已被注册' });
@@ -38,19 +44,17 @@ exports.register = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      phone,
-      status: 'active'
     });
 
     // 根据角色创建对应的个人资料
     if (role === 'jobseeker') {
       await JobSeeker.create({
-        userId: user.id,
+        user_id: user.id,
         fullName: req.body.fullName || username
       });
     } else if (role === 'company') {
       await Company.create({
-        userId: user.id,
+        user_id: user.id,
         name: req.body.companyName || username
       });
     }
@@ -101,10 +105,7 @@ exports.login = async (req, res) => {
     // 查找用户
     const user = await User.findOne({
       where: {
-        [User.sequelize.Op.or]: [
-          { username },
-          { email: username } // 支持使用邮箱登录
-        ]
+        username
       }
     });
 
@@ -112,19 +113,11 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: '用户名或密码不正确' });
     }
 
-    // 检查用户状态
-    if (user.status !== 'active') {
-      return res.status(403).json({ message: '账户已被禁用，请联系管理员' });
-    }
-
     // 验证密码
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: '用户名或密码不正确' });
     }
-
-    // 更新最后登录时间
-    await user.update({ lastLoginAt: new Date() });
 
     // 生成JWT令牌
     const payload = {
@@ -161,7 +154,7 @@ exports.login = async (req, res) => {
 // 获取当前用户信息
 exports.getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id, {
+    const user = await User.findByPk(req.body.id, {
       attributes: { exclude: ['password'] },
       include: [
         {

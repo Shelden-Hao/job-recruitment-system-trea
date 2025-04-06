@@ -1,4 +1,4 @@
-const { Job, Company, User, Application, JobSeeker, sequelize } = require('../models');
+const { Job, Company, User, Application, JobSeeker, Skill } = require('../models');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 
@@ -11,31 +11,34 @@ exports.createJob = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // 查找企业信息
-    const company = await Company.findOne({ where: { userId: req.user.id } });
-    if (!company) {
-      return res.status(404).json({ message: '企业信息不存在' });
-    }
-
-    // 验证企业认证状态
-    if (company.verificationStatus !== 'verified') {
-      return res.status(403).json({ message: '企业未通过认证，无法发布职位' });
-    }
-
     // 创建职位
     const job = await Job.create({
       ...req.body,
-      companyId: company.id,
-      status: req.body.status || 'active'
+      publish_date: new Date()
     });
 
+    // 处理技能标签
+    if (req.body.skills && Array.isArray(req.body.skills)) {
+      // 查找或创建技能
+      const skillPromises = req.body.skills.map(async (skillName) => {
+        const [skill] = await Skill.findOrCreate({
+          where: { name: skillName }
+        });
+        return skill;
+      });
+
+      const skills = await Promise.all(skillPromises);
+      await job.setSkills(skills);
+    }
+
     res.status(201).json({
+      success: true,
       message: '职位发布成功',
-      job
+      data: job
     });
   } catch (error) {
     console.error('创建职位错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
@@ -45,27 +48,29 @@ exports.getJobById = async (req, res) => {
     const { id } = req.params;
 
     const job = await Job.findByPk(id, {
-      include: [{
-        model: Company,
-        include: [{
-          model: User,
-          attributes: ['username']
-        }],
-        attributes: ['id', 'name', 'logo', 'industry', 'size', 'address']
-      }]
+      include: [
+        {
+          model: Company,
+          attributes: ['id', 'name', 'logo', 'industry', 'size', 'address']
+        },
+        {
+          model: Skill,
+          through: { attributes: [] }
+        }
+      ]
     });
 
     if (!job) {
       return res.status(404).json({ message: '职位不存在' });
     }
 
-    // 增加浏览次数
-    await job.update({ views: job.views + 1 });
-
-    res.json(job);
+    res.json({
+      success: true,
+      data: job
+    });
   } catch (error) {
     console.error('获取职位详情错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
@@ -86,22 +91,31 @@ exports.updateJob = async (req, res) => {
       return res.status(404).json({ message: '职位不存在' });
     }
 
-    // 验证权限（只有发布该职位的企业可以更新）
-    const company = await Company.findOne({ where: { userId: req.user.id } });
-    if (!company || job.companyId !== company.id) {
-      return res.status(403).json({ message: '无权更新此职位' });
-    }
-
     // 更新职位信息
     await job.update(req.body);
 
+    // 更新技能
+    if (req.body.skills && Array.isArray(req.body.skills)) {
+      // 查找或创建技能
+      const skillPromises = req.body.skills.map(async (skillName) => {
+        const [skill] = await Skill.findOrCreate({
+          where: { name: skillName }
+        });
+        return skill;
+      });
+
+      const skills = await Promise.all(skillPromises);
+      await job.setSkills(skills);
+    }
+
     res.json({
+      success: true,
       message: '职位更新成功',
-      job
+      data: job
     });
   } catch (error) {
     console.error('更新职位错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
@@ -116,19 +130,16 @@ exports.deleteJob = async (req, res) => {
       return res.status(404).json({ message: '职位不存在' });
     }
 
-    // 验证权限（只有发布该职位的企业可以删除）
-    const company = await Company.findOne({ where: { userId: req.user.id } });
-    if (!company || job.companyId !== company.id) {
-      return res.status(403).json({ message: '无权删除此职位' });
-    }
-
-    // 软删除职位
+    // 删除职位
     await job.destroy();
 
-    res.json({ message: '职位删除成功' });
+    res.json({ 
+      success: true,
+      message: '职位删除成功' 
+    });
   } catch (error) {
     console.error('删除职位错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
@@ -138,27 +149,24 @@ exports.searchJobs = async (req, res) => {
     const {
       keyword,
       location,
-      salaryMin,
-      salaryMax,
-      jobType,
-      experienceRequired,
-      educationRequired,
-      industry,
+      salary_min,
+      salary_max,
+      experience,
+      education,
+      company_id,
       page = 1,
       limit = 10
     } = req.query;
 
     // 构建查询条件
-    const whereConditions = {
-      status: 'active' // 只搜索激活状态的职位
-    };
+    const whereConditions = {};
 
-    // 关键词搜索（职位名称、描述、要求）
+    // 关键词搜索（职位名称、描述）
     if (keyword) {
       whereConditions[Op.or] = [
         { title: { [Op.like]: `%${keyword}%` } },
         { description: { [Op.like]: `%${keyword}%` } },
-        { requirements: { [Op.like]: `%${keyword}%` } }
+        { tags: { [Op.like]: `%${keyword}%` } }
       ];
     }
 
@@ -168,26 +176,30 @@ exports.searchJobs = async (req, res) => {
     }
 
     // 薪资范围筛选
-    if (salaryMin) {
-      whereConditions.salaryMin = { [Op.gte]: parseInt(salaryMin) };
-    }
-    if (salaryMax) {
-      whereConditions.salaryMax = { [Op.lte]: parseInt(salaryMax) };
-    }
-
-    // 工作类型筛选
-    if (jobType) {
-      whereConditions.jobType = jobType;
+    if (salary_min || salary_max) {
+      // 这是一个近似的查询方式，因为salary_range是字符串
+      // 在实际应用中可能需要更复杂的转换逻辑
+      if (salary_min) {
+        whereConditions.salary_range = { [Op.like]: `%${salary_min}%` };
+      }
+      if (salary_max) {
+        whereConditions.salary_range = { [Op.like]: `%${salary_max}%` };
+      }
     }
 
     // 经验要求筛选
-    if (experienceRequired) {
-      whereConditions.experienceRequired = { [Op.like]: `%${experienceRequired}%` };
+    if (experience) {
+      whereConditions.experience = { [Op.like]: `%${experience}%` };
     }
 
     // 学历要求筛选
-    if (educationRequired) {
-      whereConditions.educationRequired = { [Op.like]: `%${educationRequired}%` };
+    if (education) {
+      whereConditions.education = { [Op.like]: `%${education}%` };
+    }
+
+    // 公司筛选
+    if (company_id) {
+      whereConditions.company_id = company_id;
     }
 
     // 分页参数
@@ -196,25 +208,34 @@ exports.searchJobs = async (req, res) => {
     // 查询职位
     const { count, rows: jobs } = await Job.findAndCountAll({
       where: whereConditions,
-      include: [{
-        model: Company,
-        attributes: ['id', 'name', 'logo', 'industry', 'size'],
-        where: industry ? { industry: { [Op.like]: `%${industry}%` } } : {}
-      }],
-      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: Company,
+          attributes: ['id', 'name', 'logo', 'industry', 'size']
+        },
+        {
+          model: Skill,
+          through: { attributes: [] }
+        }
+      ],
       limit: parseInt(limit),
-      offset: offset
+      offset: parseInt(offset),
+      order: [['publish_date', 'DESC']]
     });
 
     res.json({
-      total: count,
-      totalPages: Math.ceil(count / limit),
-      currentPage: parseInt(page),
-      jobs
+      success: true,
+      data: jobs,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
     });
   } catch (error) {
     console.error('搜索职位错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 

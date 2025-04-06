@@ -3,60 +3,59 @@ const { DataTypes } = require('sequelize');
 module.exports = (sequelize) => {
   const Application = sequelize.define('Application', {
     id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
       primaryKey: true
     },
-    jobId: {
-      type: DataTypes.UUID,
+    user_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'Jobs',
-        key: 'id'
-      }
+      comment: '申请用户ID'
     },
-    jobseekerId: {
-      type: DataTypes.UUID,
+    job_id: {
+      type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
-      references: {
-        model: 'JobSeekers',
-        key: 'id'
-      }
+      comment: '申请职位ID'
     },
-    resumeUrl: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      comment: '申请时提交的简历URL'
-    },
-    coverLetter: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      comment: '求职信'
+    apply_date: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      comment: '申请日期'
     },
     status: {
-      type: DataTypes.ENUM('pending', 'reviewed', 'interview', 'offer', 'rejected', 'withdrawn'),
+      type: DataTypes.STRING(50),
       defaultValue: 'pending',
-      comment: '申请状态'
+      comment: '申请状态：pending-待处理，interview-面试中，offer-已录用，rejected-已拒绝'
     },
-    matchScore: {
-      type: DataTypes.FLOAT,
+    resume_path: {
+      type: DataTypes.STRING(255),
       allowNull: true,
-      comment: '匹配度分数'
+      comment: '简历路径'
     },
-    hrNotes: {
-      type: DataTypes.TEXT,
+    cover_letter_path: {
+      type: DataTypes.STRING(255),
       allowNull: true,
-      comment: 'HR备注'
+      comment: '求职信路径'
     },
-    rejectionReason: {
-      type: DataTypes.TEXT,
+    interview_time: {
+      type: DataTypes.DATE,
       allowNull: true,
-      comment: '拒绝原因'
+      comment: '面试时间'
     }
   }, {
+    tableName: 'applications',
     timestamps: true,
-    paranoid: true // 软删除
+    underscored: true
   });
+
+  Application.associate = (models) => {
+    Application.belongsTo(models.User, { foreignKey: 'user_id' });
+    Application.belongsTo(models.Job, { foreignKey: 'job_id' });
+    Application.belongsTo(models.JobSeeker, { 
+      foreignKey: 'jobseeker_id',
+      constraints: false // 暂时禁用外键约束，避免同步问题
+    });
+  };
 
   return Application;
 };

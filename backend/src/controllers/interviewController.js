@@ -228,7 +228,7 @@ exports.getCompanyInterviews = async (req, res) => {
     const applicationIds = applications.map(app => app.id);
 
     // 获取这些申请的面试
-    const interviews = await Interview.findAll({
+    const interviewResults = await Interview.findAll({
       where: { applicationId: { [Op.in]: applicationIds } },
       include: [{
         model: Application,
@@ -239,11 +239,54 @@ exports.getCompanyInterviews = async (req, res) => {
           model: JobSeeker,
           include: [{
             model: User,
-            attributes: ['username', 'email']
+            attributes: ['username', 'email', 'avatar']
           }]
         }]
       }],
       order: [['scheduledTime', 'DESC']]
+    });
+    
+    // 转换数据格式以匹配前端期望的结构
+    const interviews = interviewResults.map(interview => {
+      const scheduledDate = new Date(interview.scheduledTime);
+      const formattedDateTime = scheduledDate.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).replace(/\//g, '-');
+      
+      return {
+        id: interview.id,
+        application: {
+          id: interview.Application.id,
+          job: {
+            id: interview.Application.Job.id,
+            title: interview.Application.Job.title
+          },
+          jobseeker: {
+            id: interview.Application.JobSeeker.id,
+            name: interview.Application.JobSeeker.fullName,
+            email: interview.Application.JobSeeker.User.email,
+            username: interview.Application.JobSeeker.User.username,
+            avatar: interview.Application.JobSeeker.User.avatar
+          }
+        },
+        scheduledTime: interview.scheduledTime,
+        formattedDateTime,
+        duration: interview.duration,
+        location: interview.location,
+        interviewType: interview.interviewType,
+        status: interview.status,
+        interviewers: interview.interviewers,
+        feedback: interview.feedback,
+        result: interview.result,
+        notes: interview.notes,
+        reminderSent: interview.reminderSent,
+        createdAt: interview.createdAt,
+        updatedAt: interview.updatedAt
+      };
     });
 
     res.json(interviews);
@@ -271,7 +314,7 @@ exports.getJobSeekerInterviews = async (req, res) => {
     const applicationIds = applications.map(app => app.id);
 
     // 获取这些申请的面试
-    const interviews = await Interview.findAll({
+    const interviewResults = await Interview.findAll({
       where: { applicationId: { [Op.in]: applicationIds } },
       include: [{
         model: Application,
@@ -279,11 +322,53 @@ exports.getJobSeekerInterviews = async (req, res) => {
           model: Job,
           include: [{
             model: Company,
-            attributes: ['id', 'name', 'logo']
+            attributes: ['id', 'name', 'logo', 'address']
           }]
         }]
       }],
       order: [['scheduledTime', 'DESC']]
+    });
+    
+    // 转换数据格式以匹配前端期望的结构
+    const interviews = interviewResults.map(interview => {
+      const scheduledDate = new Date(interview.scheduledTime);
+      const formattedDateTime = scheduledDate.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).replace(/\//g, '-');
+      
+      return {
+        id: interview.id,
+        application: {
+          id: interview.Application.id,
+          job: {
+            id: interview.Application.Job.id,
+            title: interview.Application.Job.title,
+            company: {
+              id: interview.Application.Job.Company.id,
+              name: interview.Application.Job.Company.name,
+              logo: interview.Application.Job.Company.logo,
+              address: interview.Application.Job.Company.address
+            }
+          }
+        },
+        scheduledTime: interview.scheduledTime,
+        formattedDateTime,
+        duration: interview.duration,
+        location: interview.location,
+        interviewType: interview.interviewType,
+        status: interview.status,
+        interviewers: interview.interviewers,
+        feedback: interview.feedback,
+        result: interview.result,
+        notes: interview.notes,
+        reminderSent: interview.reminderSent,
+        createdAt: interview.createdAt,
+        updatedAt: interview.updatedAt
+      };
     });
 
     res.json(interviews);

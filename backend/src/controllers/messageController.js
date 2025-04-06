@@ -1,4 +1,4 @@
-const { Message, User, JobSeeker, Company } = require('../models');
+const { Message, User, Conversation } = require('../models');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
 
@@ -11,273 +11,235 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { receiverId, content, contentType = 'text', relatedTo, relatedType } = req.body;
-    const senderId = req.user.id;
+    const { sender_id, receiver_id, content, content_type = 'text', related_to, related_type } = req.body;
 
-    // 验证接收者是否存在
-    const receiver = await User.findByPk(receiverId);
-    if (!receiver) {
-      return res.status(404).json({ message: '接收者不存在' });
+    // 查找或创建会话
+    let conversation = await Conversation.findOne({
+      where: {
+        [Op.or]: [
+          { user_id1: sender_id, user_id2: receiver_id },
+          { user_id1: receiver_id, user_id2: sender_id }
+        ]
+      }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        user_id1: sender_id,
+        user_id2: receiver_id,
+        unread_count_user1: 0,
+        unread_count_user2: 0
+      });
     }
 
     // 创建消息
     const message = await Message.create({
-      senderId,
-      receiverId,
+      sender_id,
+      receiver_id,
       content,
-      contentType,
-      relatedTo,
-      relatedType,
-      isRead: false
+      content_type,
+      related_to,
+      related_type,
+      is_read: false,
+      conversation_id: conversation.id
     });
 
-    // 获取发送者信息
-    const sender = await User.findByPk(senderId, {
-      attributes: ['id', 'username', 'role', 'avatar'],
-      include: [
-        {
-          model: JobSeeker,
-          as: 'jobseekerProfile',
-          required: false,
-          attributes: ['fullName']
-        },
-        {
-          model: Company,
-          as: 'companyProfile',
-          required: false,
-          attributes: ['name']
-        }
-      ]
-    });
-
-    // 构建响应数据
-    const messageData = {
-      id: message.id,
-      content,
-      contentType,
-      createdAt: message.createdAt,
-      sender: {
-        id: sender.id,
-        username: sender.username,
-        role: sender.role,
-        avatar: sender.avatar,
-        name: sender.role === 'jobseeker' 
-          ? (sender.jobseekerProfile ? sender.jobseekerProfile.fullName : sender.username)
-          : (sender.companyProfile ? sender.companyProfile.name : sender.username)
-      },
-      relatedTo,
-      relatedType
-    };
+    // 更新会话的未读消息计数和最后一条消息
+    if (conversation.user_id1 === receiver_id) {
+      await conversation.update({
+        last_message_id: message.id,
+        unread_count_user1: conversation.unread_count_user1 + 1
+      });
+    } else {
+      await conversation.update({
+        last_message_id: message.id,
+        unread_count_user2: conversation.unread_count_user2 + 1
+      });
+    }
 
     res.status(201).json({
+      success: true,
       message: '消息发送成功',
-      data: messageData
+      data: message
     });
   } catch (error) {
     console.error('发送消息错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
-// 获取与特定用户的对话
-exports.getConversation = async (req, res) => {
+// 获取用户的所有会话
+exports.getUserConversations = async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUserId = req.user.id;
     const { page = 1, limit = 20 } = req.query;
-
-    // 验证用户是否存在
-    const otherUser = await User.findByPk(userId);
-    if (!otherUser) {
-      return res.status(404).json({ message: '用户不存在' });
-    }
-
-    // 计算分页参数
+    
+    // 分页参数
     const offset = (page - 1) * limit;
 
-    // 获取消息列表
-    const messages = await Message.findAndCountAll({
+    // 查找用户参与的所有会话
+    const { count, rows: conversations } = await Conversation.findAndCountAll({
       where: {
         [Op.or]: [
-          { senderId: currentUserId, receiverId: userId },
-          { senderId: userId, receiverId: currentUserId }
+          { user_id1: userId },
+          { user_id2: userId }
         ]
       },
-      order: [['createdAt', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
-    });
-
-    // 获取发送者和接收者信息
-    const userIds = [...new Set(messages.rows.map(m => [m.senderId, m.receiverId]).flat())];
-    const users = await User.findAll({
-      where: { id: { [Op.in]: userIds } },
-      attributes: ['id', 'username', 'role', 'avatar'],
       include: [
         {
-          model: JobSeeker,
-          as: 'jobseekerProfile',
-          required: false,
-          attributes: ['fullName']
+          model: User,
+          as: 'user1',
+          attributes: ['id', 'username', 'avatar']
         },
         {
-          model: Company,
-          as: 'companyProfile',
-          required: false,
-          attributes: ['name']
+          model: User,
+          as: 'user2',
+          attributes: ['id', 'username', 'avatar']
+        },
+        {
+          model: Message,
+          as: 'lastMessage'
         }
-      ]
+      ],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [[{ model: Message, as: 'lastMessage' }, 'created_at', 'DESC']]
     });
 
-    // 构建用户信息映射
-    const userMap = {};
-    users.forEach(user => {
-      userMap[user.id] = {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        avatar: user.avatar,
-        name: user.role === 'jobseeker' 
-          ? (user.jobseekerProfile ? user.jobseekerProfile.fullName : user.username)
-          : (user.companyProfile ? user.companyProfile.name : user.username)
+    // 格式化数据
+    const formattedConversations = conversations.map(conversation => {
+      const otherUser = conversation.user_id1 == userId ? conversation.user2 : conversation.user1;
+      const unreadCount = conversation.user_id1 == userId ? 
+        conversation.unread_count_user1 : conversation.unread_count_user2;
+      
+      return {
+        id: conversation.id,
+        user: {
+          id: otherUser.id,
+          username: otherUser.username,
+          avatar: otherUser.avatar
+        },
+        lastMessage: conversation.lastMessage ? {
+          id: conversation.lastMessage.id,
+          content: conversation.lastMessage.content,
+          content_type: conversation.lastMessage.content_type,
+          created_at: conversation.lastMessage.created_at,
+          is_read: conversation.lastMessage.is_read
+        } : null,
+        unreadCount
       };
     });
 
-    // 构建响应数据
-    const formattedMessages = messages.rows.map(message => ({
-      id: message.id,
-      content: message.content,
-      contentType: message.contentType,
-      fileUrl: message.fileUrl,
-      createdAt: message.createdAt,
-      isRead: message.isRead,
-      sender: userMap[message.senderId],
-      receiver: userMap[message.receiverId],
-      isMine: message.senderId === currentUserId
-    }));
-
-    // 标记来自对方的消息为已读
-    await Message.update(
-      { isRead: true, readAt: new Date() },
-      {
-        where: {
-          senderId: userId,
-          receiverId: currentUserId,
-          isRead: false
-        }
-      }
-    );
-
     res.json({
-      messages: formattedMessages,
-      total: messages.count,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(messages.count / limit)
+      success: true,
+      data: formattedConversations,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
     });
   } catch (error) {
-    console.error('获取对话错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    console.error('获取用户会话列表错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
-// 获取最近的对话列表
-exports.getConversationList = async (req, res) => {
+// 获取与特定用户的会话
+exports.getConversation = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
-
-    // 查询与当前用户相关的所有消息
-    const messages = await Message.findAll({
+    const currUserId = req.user.id;
+    const { userId: otherUserId } = req.params;
+    
+    // 查找会话
+    let conversation = await Conversation.findOne({
       where: {
         [Op.or]: [
-          { senderId: currentUserId },
-          { receiverId: currentUserId }
+          { user_id1: currUserId, user_id2: otherUserId },
+          { user_id1: otherUserId, user_id2: currUserId }
         ]
-      },
-      order: [['createdAt', 'DESC']],
-      attributes: ['id', 'senderId', 'receiverId', 'content', 'contentType', 'isRead', 'createdAt']
-    });
-
-    // 提取所有对话的用户ID
-    const conversationUsers = new Set();
-    messages.forEach(message => {
-      if (message.senderId !== currentUserId) {
-        conversationUsers.add(message.senderId);
-      }
-      if (message.receiverId !== currentUserId) {
-        conversationUsers.add(message.receiverId);
       }
     });
 
-    // 获取这些用户的信息
-    const users = await User.findAll({
-      where: { id: { [Op.in]: Array.from(conversationUsers) } },
-      attributes: ['id', 'username', 'role', 'avatar'],
-      include: [
-        {
-          model: JobSeeker,
-          as: 'jobseekerProfile',
-          required: false,
-          attributes: ['fullName']
-        },
-        {
-          model: Company,
-          as: 'companyProfile',
-          required: false,
-          attributes: ['name']
-        }
-      ]
+    // 如果不存在会话，则创建
+    if (!conversation) {
+      conversation = await Conversation.create({
+        user_id1: currUserId,
+        user_id2: otherUserId,
+        unread_count_user1: 0,
+        unread_count_user2: 0
+      });
+    }
+
+    // 查询最近的消息
+    const messages = await Message.findAll({
+      where: { conversation_id: conversation.id },
+      order: [['created_at', 'DESC']],
+      limit: 20
     });
 
-    // 构建用户信息映射
-    const userMap = {};
-    users.forEach(user => {
-      userMap[user.id] = {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        avatar: user.avatar,
-        name: user.role === 'jobseeker' 
-          ? (user.jobseekerProfile ? user.jobseekerProfile.fullName : user.username)
-          : (user.companyProfile ? user.companyProfile.name : user.username)
-      };
+    // 获取对方用户信息
+    const otherUser = await User.findByPk(otherUserId, {
+      attributes: ['id', 'username', 'avatar']
     });
 
-    // 构建对话列表
-    const conversations = {};
-    messages.forEach(message => {
-      const otherUserId = message.senderId === currentUserId ? message.receiverId : message.senderId;
-      
-      if (!conversations[otherUserId]) {
-        conversations[otherUserId] = {
-          user: userMap[otherUserId],
-          lastMessage: {
-            id: message.id,
-            content: message.content,
-            contentType: message.contentType,
-            createdAt: message.createdAt,
-            isRead: message.isRead,
-            isMine: message.senderId === currentUserId
-          },
-          unreadCount: 0
-        };
-      }
-      
-      // 计算未读消息数
-      if (message.receiverId === currentUserId && !message.isRead) {
-        conversations[otherUserId].unreadCount += 1;
+    res.json({
+      success: true,
+      data: {
+        conversation,
+        messages: messages.reverse(),
+        user: otherUser
       }
     });
-
-    // 转换为数组并按最后消息时间排序
-    const conversationList = Object.values(conversations).sort((a, b) => 
-      new Date(b.lastMessage.createdAt) - new Date(a.lastMessage.createdAt)
-    );
-
-    res.json(conversationList);
   } catch (error) {
-    console.error('获取对话列表错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    console.error('获取会话错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
+  }
+};
+
+// 获取会话消息
+exports.getConversationMessages = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+    
+    // 验证会话存在
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: '会话不存在' });
+    }
+
+    // 验证权限（只有会话参与者可以查看消息）
+    const userId = req.user.id;
+    if (conversation.user_id1 !== userId && conversation.user_id2 !== userId) {
+      return res.status(403).json({ message: '没有权限查看此会话' });
+    }
+
+    // 分页参数
+    const offset = (page - 1) * limit;
+
+    // 查询消息
+    const { count, rows: messages } = await Message.findAndCountAll({
+      where: { conversation_id: conversationId },
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['created_at', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      data: messages,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
+    });
+  } catch (error) {
+    console.error('获取会话消息错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
@@ -285,8 +247,7 @@ exports.getConversationList = async (req, res) => {
 exports.markAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
-    const currentUserId = req.user.id;
-
+    
     // 查找消息
     const message = await Message.findByPk(messageId);
     if (!message) {
@@ -294,90 +255,135 @@ exports.markAsRead = async (req, res) => {
     }
 
     // 验证权限（只有接收者可以标记为已读）
-    if (message.receiverId !== currentUserId) {
-      return res.status(403).json({ message: '无权操作此消息' });
+    const userId = req.user.id;
+    if (message.receiver_id !== userId) {
+      return res.status(403).json({ message: '没有权限标记此消息' });
     }
 
     // 标记为已读
     await message.update({
-      isRead: true,
-      readAt: new Date()
+      is_read: true,
+      read_at: new Date()
     });
 
-    res.json({ message: '消息已标记为已读' });
+    res.json({
+      success: true,
+      message: '消息已标记为已读'
+    });
   } catch (error) {
     console.error('标记消息已读错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
-// 标记所有来自特定用户的消息为已读
-exports.markAllAsRead = async (req, res) => {
+// 标记会话所有消息为已读
+exports.markConversationAsRead = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUserId = req.user.id;
+    const { conversationId } = req.params;
+    
+    // 查找会话
+    const conversation = await Conversation.findByPk(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: '会话不存在' });
+    }
 
-    // 标记所有来自该用户的未读消息为已读
+    // 验证权限（只有会话参与者可以标记消息为已读）
+    const userId = req.user.id;
+    if (conversation.user_id1 !== userId && conversation.user_id2 !== userId) {
+      return res.status(403).json({ message: '不是会话参与者' });
+    }
+
+    // 更新所有未读消息
     await Message.update(
-      { isRead: true, readAt: new Date() },
+      {
+        is_read: true,
+        read_at: new Date()
+      },
       {
         where: {
-          senderId: userId,
-          receiverId: currentUserId,
-          isRead: false
+          conversation_id: conversationId,
+          receiver_id: userId,
+          is_read: false
         }
       }
     );
 
-    res.json({ message: '所有消息已标记为已读' });
+    // 更新会话的未读消息计数
+    if (conversation.user_id1 === userId) {
+      await conversation.update({ unread_count_user1: 0 });
+    } else {
+      await conversation.update({ unread_count_user2: 0 });
+    }
+
+    res.json({
+      success: true,
+      message: '所有消息已标记为已读'
+    });
   } catch (error) {
-    console.error('标记所有消息已读错误:', error);
-    res.status(500).json({ message: '服务器错误' });
+    console.error('标记会话已读错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
 
-// 获取未读消息数量
+// 获取未读消息数
 exports.getUnreadCount = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
-
-    // 统计未读消息数量
+    const { userId } = req.params;
+    
+    // 计算总未读消息数
     const unreadCount = await Message.count({
       where: {
-        receiverId: currentUserId,
-        isRead: false
+        receiver_id: userId,
+        is_read: false
       }
     });
 
-    res.json({ unreadCount });
-  } catch (error) {
-    console.error('获取未读消息数量错误:', error);
-    res.status(500).json({ message: '服务器错误' });
-  }
-};
-
-// 上传消息附件（图片/文件）
-exports.uploadAttachment = async (req, res) => {
-  // 使用multer中间件处理文件上传
-  // 这个功能需要在路由中配置multer中间件
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: '请选择要上传的文件' });
-    }
-
-    // 文件路径
-    const fileUrl = `/uploads/messages/${path.basename(req.file.path)}`;
-    
-    res.status(200).json({
-      message: '文件上传成功',
-      fileUrl
+    res.json({
+      success: true,
+      data: { unreadCount }
     });
   } catch (error) {
-    console.error('文件上传错误:', error);
-    // 发生错误时删除已上传的文件
-    if (req.file) {
-      fs.unlinkSync(req.file.path);
-    }
-    res.status(500).json({ message: '服务器错误' });
+    console.error('获取未读消息数错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
   }
 };
+
+// 标记所有消息为已读
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // 更新所有未读消息
+    await Message.update(
+      {
+        is_read: true,
+        read_at: new Date()
+      },
+      {
+        where: {
+          receiver_id: userId,
+          is_read: false
+        }
+      }
+    );
+
+    // 更新所有会话的未读计数
+    await Conversation.update(
+      { unread_count_user1: 0 },
+      { where: { user_id1: userId } }
+    );
+    
+    await Conversation.update(
+      { unread_count_user2: 0 },
+      { where: { user_id2: userId } }
+    );
+
+    res.json({
+      success: true,
+      message: '所有消息已标记为已读'
+    });
+  } catch (error) {
+    console.error('标记所有消息已读错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
+  }
+}; 
