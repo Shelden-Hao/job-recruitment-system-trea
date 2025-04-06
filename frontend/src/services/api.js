@@ -1,12 +1,39 @@
 import axios from 'axios';
+import settle from '../../node_modules/axios/lib/core/settle';
+import buildURL from '../../node_modules/axios/lib/helpers/buildURL';
 
 // 设置基础URL
 axios.defaults.baseURL = 'http://localhost:3000';
 
+// 解决 uniapp 适配axios请求，避免报adapter is not a function错误
+axios.defaults.adapter = function (config) {
+  const { method } = config;
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: config.baseURL + buildURL(config.url, config.params, config.paramsSerializer),
+      method: method?.toUpperCase(),
+      header: { ...config.headers },
+      data: config.data,
+      responseType: config.responseType,
+      complete: function complete(response) {
+        const { data, statusCode, errMsg, header } = response;
+        const responseInfo = {
+          data,
+          status: statusCode,
+          errMsg,
+          header,
+          config: config,
+        };
+        settle(resolve, reject, responseInfo);
+      },
+    });
+  });
+};
+
 // 请求拦截器
 axios.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('token');
+    const token = uni.getStorageSync('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -25,8 +52,12 @@ axios.interceptors.response.use(
   error => {
     // 处理401错误（未授权）
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userRole');
+      uni.removeStorageSync('token');
+      uni.removeStorageSync('user');
+      uni.showToast({
+        title: '登录已过期，请重新登录',
+        icon: 'none'
+      });
       window.location.href = '/login';
     }
     return Promise.reject(error);
@@ -37,7 +68,7 @@ axios.interceptors.response.use(
 export const authAPI = {
   register: (userData) => axios.post('/api/auth/register', userData),
   login: (credentials) => axios.post('/api/auth/login', credentials),
-  getCurrentUser: () => axios.get('/api/auth/me'),
+  getCurrentUser: (object) => axios.get('/api/auth/me', object),
   updateProfile: (profileData) => axios.put('/api/auth/profile', profileData)
 };
 

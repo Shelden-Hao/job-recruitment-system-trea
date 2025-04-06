@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import {authAPI} from "../services/api";
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -8,31 +9,31 @@ export const useAuthStore = defineStore('auth', {
     loading: false,
     error: null
   }),
-  
+
   getters: {
     isAuthenticated: (state) => !!state.token,
     userRole: (state) => state.user?.role || null,
     isJobSeeker: (state) => state.user?.role === 'jobseeker',
     isCompany: (state) => state.user?.role === 'company'
   },
-  
+
   actions: {
     async register(userData) {
       this.loading = true;
       this.error = null;
-      
+
       try {
         const response = await axios.post('/api/auth/register', userData);
         this.token = response.data.token;
         this.user = response.data.user;
-        
+
         // 保存到本地存储
         uni.setStorageSync('token', this.token);
         uni.setStorageSync('userRole', this.user.role);
-        
+
         // 设置axios默认头部
         axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-        
+
         // 根据角色重定向
         if (this.user.role === 'jobseeker') {
           uni.switchTab({
@@ -43,7 +44,7 @@ export const useAuthStore = defineStore('auth', {
             url: '/pages/company/index'
           });
         }
-        
+
         return response.data;
       } catch (error) {
         this.error = error.response?.data?.message || '注册失败';
@@ -52,16 +53,18 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
       }
     },
-    
+
     async login(credentials) {
+      console.log("=>(auth.js:122) credentials", credentials);
       this.loading = true;
       this.error = null;
-      
+
       try {
-        const response = await axios.post('/api/auth/login', credentials);
+        const response = await authAPI.login(credentials);
         this.token = response.data.token;
+        this.user = response.data.user;
         uni.setStorageSync('token', this.token);
-        await this.fetchCurrentUser();
+        await this.fetchCurrentUser(this.user.id);
         uni.switchTab({
           url: '/pages/index/index'
         });
@@ -72,15 +75,14 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
       }
     },
-    
-    async fetchCurrentUser() {
+
+    async fetchCurrentUser(id) {
       if (!this.token) return null;
-      
+
       this.loading = true;
-      
+
       try {
-        const response = await axios.get('/api/auth/me');
-        this.user = response.data;
+        const response = await authAPI.getCurrentUser(id);
         return response.data;
       } catch (error) {
         if (error.response?.status === 401) {
@@ -92,7 +94,7 @@ export const useAuthStore = defineStore('auth', {
         this.loading = false;
       }
     },
-    
+
     async logout() {
       this.token = null;
       this.user = null;
@@ -101,10 +103,10 @@ export const useAuthStore = defineStore('auth', {
         url: '/pages/login/login'
       });
     },
-    
+
     async updateProfile(profileData) {
       this.loading = true;
-      
+
       try {
         const response = await axios.put('/api/auth/profile', profileData);
         this.user = response.data;

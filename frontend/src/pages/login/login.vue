@@ -44,7 +44,8 @@
 
 <script>
 import { ref, reactive } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '../../stores/auth';
+import {authAPI} from "../../services/api";
 
 export default {
   setup() {
@@ -81,10 +82,18 @@ export default {
 
       try {
         loading.value = true;
-        await authStore.login(formData);
+        const result = await authAPI.login(formData);
+        uni.setStorageSync('token', result.data.token)
+        uni.setStorageSync('user', result.data.user)
+        // TODO: 暂时使用在store中的login有问题！所以目前暂时将登录逻辑写在组件中，后续使用封装在store中的login优化
+        // await authStore.login(formData);
         uni.showToast({
           title: '登录成功',
           icon: 'success'
+        });
+        // 登录成功后，跳转到首页
+        uni.switchTab({
+          url: '/pages/index/index'
         });
       } catch (error) {
         uni.showToast({
