@@ -60,6 +60,7 @@ import {jobAPI} from "../../services/api";
 const authStore = useAuthStore();
 const searchKeyword = ref('');
 const jobs = ref([]);
+const originalJobs = ref([]);
 
 const fetchJobs = async () => {
   try {
@@ -102,6 +103,7 @@ const fetchJobs = async () => {
     // ];
     const result = await jobAPI.getJobs();
     jobs.value = result.data.data;
+    originalJobs.value = result.data.data;
   } catch (error) {
     console.error('获取职位列表失败:', error);
   }
@@ -110,6 +112,7 @@ const fetchJobs = async () => {
 const handleSearch = () => {
   // TODO: 实现搜索功能
   console.log('搜索关键词:', searchKeyword.value);
+  jobs.value = originalJobs.value;
   // 不调用后端接口，直接在前端实现搜索功能
   if (searchKeyword.value) {
     jobs.value = jobs.value.filter(job => {
