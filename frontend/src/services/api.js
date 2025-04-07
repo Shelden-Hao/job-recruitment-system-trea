@@ -72,6 +72,13 @@ export const authAPI = {
   updateProfile: (profileData) => axios.put('/api/auth/profile', profileData)
 };
 
+// 用户相关API
+export const userAPI = {
+  getUserById: (id) => axios.get(`/api/users/${id}`),
+  updateUser: (id, userData) => axios.put(`/api/users/${id}`, userData),
+  deleteUser: (id) => axios.delete(`/api/users/${id}`)
+};
+
 // 职位相关API
 export const jobAPI = {
   getJobs: (params) => axios.get('/api/jobs', { params }),

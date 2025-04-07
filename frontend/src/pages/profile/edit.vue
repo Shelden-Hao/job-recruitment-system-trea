@@ -44,20 +44,6 @@
         />
       </view>
 
-      <view class="form-item" v-if="isJobSeeker">
-        <text class="label">所在地区</text>
-        <picker
-          mode="region"
-          @change="regionChange"
-          :value="formData.region"
-          class="picker"
-        >
-          <view class="picker-value">{{
-            formData.region.join(" ") || "请选择地区"
-          }}</view>
-        </picker>
-      </view>
-
       <view class="form-item" v-if="isCompany">
         <text class="label">公司名称</text>
         <input
@@ -103,6 +89,7 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { ref, computed } from "vue";
 import { useAuthStore } from "@/stores/auth";
+import {userAPI} from "../../services/api";
 
 const authStore = useAuthStore();
 
@@ -112,7 +99,6 @@ const formData = ref({
   email: "",
   phone: "",
   avatar: "",
-  region: ["", "", ""],
   bio: "",
   role: "jobseeker",
   companyName: "",
@@ -124,23 +110,34 @@ const isJobSeeker = computed(() => formData.value.role === "jobseeker");
 const isCompany = computed(() => formData.value.role === "company");
 
 // 获取用户信息
-const fetchUserInfo = () => {
+const fetchUserInfo = async () => {
   try {
     // 模拟获取用户数据
     // 实际项目中，应该调用 API 获取用户信息
-    setTimeout(() => {
-      formData.value = {
-        username: "John Doe",
-        email: "john.doe@example.com",
-        phone: "13800138000",
-        avatar: "/static/images/default-avatar.png",
-        region: ["广东省", "深圳市", "南山区"],
-        bio: "热爱技术，专注前端开发",
-        role: "jobseeker", // 可以设置为'jobseeker'或'company'测试不同角色
-        companyName: "",
-        companyAddress: "",
-      };
-    }, 300);
+    // setTimeout(() => {
+    //   formData.value = {
+    //     username: "John Doe",
+    //     email: "john.doe@example.com",
+    //     phone: "13800138000",
+    //     avatar: "/static/images/default-avatar.png",
+    //     bio: "热爱技术，专注前端开发",
+    //     role: "jobseeker", // 可以设置为'jobseeker'或'company'测试不同角色
+    //     companyName: "",
+    //     companyAddress: "",
+    //   };
+    // }, 300);
+    const result = await userAPI.getUserById(uni.getStorageSync('user').id)
+    console.log("=>(edit.vue:146) result", result);
+    formData.value.username = result.data.data.username;
+    formData.value.email = result.data.data.email;
+    formData.value.phone = result.data.data.phone;
+    formData.value.avatar = result.data.data.avatar;
+    formData.value.bio = result.data.data.bio;
+    formData.value.role = result.data.data.role;
+    if (result.data.data.role === 'company') {
+      formData.value.companyName = result.data.data.companyName;
+      formData.value.companyAddress = result.data.data.companyAddress;
+    }
   } catch (error) {
     console.error("获取用户信息失败:", error);
     uni.showToast({

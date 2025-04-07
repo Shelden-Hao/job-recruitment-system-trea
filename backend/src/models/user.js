@@ -75,6 +75,11 @@ module.exports = (sequelize) => {
     User.hasMany(models.Message, { foreignKey: 'receiver_id', as: 'receivedMessages' });
     User.hasMany(models.Conversation, { foreignKey: 'user_id1', as: 'conversationsAsUser1' });
     User.hasMany(models.Conversation, { foreignKey: 'user_id2', as: 'conversationsAsUser2' });
+    User.belongsToMany(models.Skill, { 
+      through: 'user_skills', 
+      foreignKey: 'user_id', 
+      otherKey: 'skill_id' 
+    });
   };
 
   return User;
