@@ -8,7 +8,7 @@
       </view>
 
       <view class="info-section">
-        <button type="primary" class="btn" @click="goToEditProfile">个人资料</button>
+        <button type="primary" class="btn" @click="goToEditProfile">资料详情</button>
         <button type="default" class="btn" v-if="isJobSeeker" @click="goToResume">我的简历</button>
         <button type="default" class="btn" v-if="isJobSeeker" @click="goToApplications">我的申请</button>
         <button type="warn" class="btn" @click="handleLogout">退出登录</button>
@@ -21,6 +21,7 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import {authAPI} from "../../services/api";
 
 const authStore = useAuthStore();
 const userInfo = ref({
@@ -34,17 +35,22 @@ const isJobSeeker = computed(() => userInfo.value.role === 'jobseeker');
 const isCompany = computed(() => userInfo.value.role === 'company');
 
 // 获取用户信息
-const fetchUserInfo = () => {
+const fetchUserInfo = async () => {
   try {
     // 实际项目中，应该调用 authStore.fetchCurrentUser()
     // 模拟获取用户数据
-    setTimeout(() => {
-      userInfo.value = {
-        username: 'John Doe',
-        role: 'jobseeker', // 可以设置为'jobseeker'或'company'测试不同角色
-        avatar: '/static/images/default-avatar.png'
-      };
-    }, 300);
+    // setTimeout(() => {
+    //   userInfo.value = {
+    //     username: 'John Doe',
+    //     role: 'jobseeker', // 可以设置为'jobseeker'或'company'测试不同角色
+    //     avatar: '/static/images/default-avatar.png'
+    //   };
+    // }, 300);
+    const result = await authAPI.getCurrentUser({
+      id: uni.getStorageSync('user').id
+    })
+    console.log("result", result);
+    userInfo.value = result.data;
   } catch (error) {
     console.error('获取用户信息失败:', error);
     uni.showToast({

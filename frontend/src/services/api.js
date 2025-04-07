@@ -68,7 +68,7 @@ axios.interceptors.response.use(
 export const authAPI = {
   register: (userData) => axios.post('/api/auth/register', userData),
   login: (credentials) => axios.post('/api/auth/login', credentials),
-  getCurrentUser: (object) => axios.get('/api/auth/me', object),
+  getCurrentUser: (object) => axios.post('/api/auth/me', object),
   updateProfile: (profileData) => axios.put('/api/auth/profile', profileData)
 };
 

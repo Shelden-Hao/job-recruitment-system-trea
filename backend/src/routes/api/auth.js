@@ -115,7 +115,7 @@ router.post('/login', [
 /**
  * @swagger
  * /api/auth/me:
- *   get:
+ *   post:
  *     summary: 获取当前用户信息
  *     tags: [Authentication]
  *     security:
@@ -128,6 +128,6 @@ router.post('/login', [
  *       500:
  *         description: 服务器错误
  */
-router.get('/me', auth, authController.getCurrentUser);
+router.post('/me', auth, authController.getCurrentUser);
 
 module.exports = router; 
