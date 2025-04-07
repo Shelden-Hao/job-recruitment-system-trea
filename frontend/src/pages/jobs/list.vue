@@ -14,7 +14,6 @@
     </view>
 
     <view class="job-list">
-      <view class="section-title">最新职位</view>
       <view class="job-cards">
         <view v-for="job in jobs" :key="job.id" class="job-card" @click="goToJobDetail(job.id)">
           <view class="job-info">
@@ -313,7 +312,7 @@ export default {
 }
 
 .job-list {
-  padding: 0 30rpx;
+  padding: 20rpx 30rpx;
 
   .section-title {
     font-size: 36rpx;

@@ -82,7 +82,7 @@ export const userAPI = {
 // 职位相关API
 export const jobAPI = {
   getJobs: () => axios.get('/api/jobs'), // 已使用
-  getJobById: (id) => axios.get(`/api/jobs/${id}`),
+  getJobById: (id) => axios.get(`/api/jobs/${id}`), // 已使用
   createJob: (jobData) => axios.post('/api/jobs', jobData),
   updateJob: (id, jobData) => axios.put(`/api/jobs/${id}`, jobData),
   deleteJob: (id) => axios.delete(`/api/jobs/${id}`)
@@ -95,7 +95,7 @@ export const resumeAPI = {
       'Content-Type': 'multipart/form-data'
     }
   }),
-  getResume: (jobseekerId) => axios.get(`/api/resumes/${jobseekerId}`),
+  getResumeById: (jobseekerId) => axios.get(`/api/resumes/${jobseekerId}`), // 已使用
   applyJob: (jobId, data) => axios.post(`/api/jobs/${jobId}/apply`, data),
   getApplications: () => axios.get('/api/applications'),
   getCompanyApplications: () => axios.get('/api/company/applications'),

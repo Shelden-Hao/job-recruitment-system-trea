@@ -90,7 +90,7 @@ exports.uploadResume = (req, res) => {
 // 获取求职者简历
 exports.getResume = async (req, res) => {
   try {
-    const { jobseekerId } = req.params;
+    const jobseekerId = req.params.id;
     
     // 查找求职者信息
     const jobseeker = await JobSeeker.findByPk(jobseekerId, {
@@ -104,13 +104,13 @@ exports.getResume = async (req, res) => {
       return res.status(404).json({ message: '求职者信息不存在' });
     }
     
-    if (!jobseeker.resumeUrl) {
-      return res.status(404).json({ message: '该求职者尚未上传简历' });
-    }
+    // if (!jobseeker.resumeUrl) {
+    //   return res.status(404).json({ message: '该求职者尚未上传简历' });
+    // }
     
     res.json({
       jobseeker,
-      resumeUrl: jobseeker.resumeUrl
+      // resumeUrl: jobseeker.resumeUrl
     });
   } catch (error) {
     console.error('获取简历错误:', error);
