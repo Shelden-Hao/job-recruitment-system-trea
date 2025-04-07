@@ -66,22 +66,22 @@ axios.interceptors.response.use(
 
 // 认证相关API
 export const authAPI = {
-  register: (userData) => axios.post('/api/auth/register', userData),
-  login: (credentials) => axios.post('/api/auth/login', credentials),
-  getCurrentUser: (object) => axios.post('/api/auth/me', object),
+  register: (userData) => axios.post('/api/auth/register', userData), // 已使用
+  login: (credentials) => axios.post('/api/auth/login', credentials), // 已使用
+  getCurrentUser: (object) => axios.post('/api/auth/me', object), // 已使用
   updateProfile: (profileData) => axios.put('/api/auth/profile', profileData)
 };
 
 // 用户相关API
 export const userAPI = {
-  getUserById: (id) => axios.get(`/api/users/${id}`),
+  getUserById: (id) => axios.get(`/api/users/${id}`), // 已使用
   updateUser: (id, userData) => axios.put(`/api/users/${id}`, userData),
   deleteUser: (id) => axios.delete(`/api/users/${id}`)
 };
 
 // 职位相关API
 export const jobAPI = {
-  getJobs: () => axios.get('/api/jobs'),
+  getJobs: () => axios.get('/api/jobs'), // 已使用
   getJobById: (id) => axios.get(`/api/jobs/${id}`),
   createJob: (jobData) => axios.post('/api/jobs', jobData),
   updateJob: (id, jobData) => axios.put(`/api/jobs/${id}`, jobData),

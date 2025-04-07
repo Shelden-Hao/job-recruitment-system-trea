@@ -48,6 +48,18 @@ exports.getJobById = async (req, res) => {
     const { id } = req.params;
 
     const job = await Job.findByPk(id, {
+      attributes: [
+        'id', 
+        'title', 
+        'description', 
+        'location', 
+        'salary_range', 
+        'publish_date', 
+        'company_id',
+        'experience',
+        'education',
+        'tags'
+      ],
       include: [
         {
           model: Company,
@@ -55,6 +67,7 @@ exports.getJobById = async (req, res) => {
         },
         {
           model: Skill,
+          attributes: ['id', 'name'],
           through: { attributes: [] }
         }
       ]
