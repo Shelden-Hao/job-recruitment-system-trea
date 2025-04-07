@@ -30,18 +30,6 @@
         </view>
 
         <view class="form-item">
-          <text class="form-label">确认密码</text>
-          <input
-            class="form-input"
-            v-model="formData.confirmPassword"
-            password
-            placeholder="请再次输入密码"
-            @blur="validateField('confirmPassword')"
-          />
-          <text class="error-message" v-if="errors.confirmPassword">{{errors.confirmPassword}}</text>
-        </view>
-
-        <view class="form-item">
           <text class="form-label">角色</text>
           <view class="radio-group">
             <view class="radio-item" @click="formData.role = 'jobseeker'">
@@ -79,6 +67,7 @@
 <script>
 import { ref, reactive } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import {authAPI} from "../../services/api";
 
 export default {
   setup() {
@@ -118,13 +107,6 @@ export default {
             errors.password = '密码长度不能小于6位';
           }
           break;
-        case 'confirmPassword':
-          if (!formData.confirmPassword) {
-            errors.confirmPassword = '请再次输入密码';
-          } else if (formData.confirmPassword !== formData.password) {
-            errors.confirmPassword = '两次输入的密码不一致';
-          }
-          break;
         case 'role':
           if (!formData.role) {
             errors.role = '请选择角色';
@@ -150,7 +132,6 @@ export default {
       // 验证各字段
       validateField('username');
       validateField('password');
-      validateField('confirmPassword');
       validateField('role');
       validateField('email');
 
@@ -164,20 +145,32 @@ export default {
 
         loading.value = true;
         // 模拟注册过程
-        setTimeout(() => {
-          uni.showToast({
-            title: '注册成功',
-            icon: 'success'
-          });
+        // setTimeout(() => {
+        //   uni.showToast({
+        //     title: '注册成功',
+        //     icon: 'success'
+        //   });
+        //
+        //   setTimeout(() => {
+        //     uni.navigateTo({
+        //       url: '/pages/login/login'
+        //     });
+        //   }, 1500);
+        //
+        //   loading.value = false;
+        // }, 1000);
 
-          setTimeout(() => {
-            uni.navigateTo({
-              url: '/pages/login/login'
-            });
-          }, 1500);
-
-          loading.value = false;
-        }, 1000);
+        // 调用真实的接口
+        await authAPI.register(formData);
+        // TODO: 后续使用封装在store中的方法优化
+        uni.showToast({
+          title: '注册成功',
+          icon: 'success'
+        });
+        // 注册成功后，跳转到登录页
+        uni.navigateTo({
+          url: '/pages/login/login'
+        });
       } catch (error) {
         uni.showToast({
           title: error.message || '注册失败',
