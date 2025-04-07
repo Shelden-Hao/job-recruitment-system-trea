@@ -81,7 +81,7 @@ export const userAPI = {
 
 // 职位相关API
 export const jobAPI = {
-  getJobs: (params) => axios.get('/api/jobs', { params }),
+  getJobs: () => axios.get('/api/jobs'),
   getJobById: (id) => axios.get(`/api/jobs/${id}`),
   createJob: (jobData) => axios.post('/api/jobs', jobData),
   updateJob: (id, jobData) => axios.put(`/api/jobs/${id}`, jobData),

@@ -135,7 +135,7 @@ router.post('/', auth, jobController.createJob);
  *       500:
  *         description: 服务器错误
  */
-router.get('/', jobController.searchJobs);
+// router.get('/', jobController.searchJobs);
 
 /**
  * @swagger
@@ -265,5 +265,7 @@ router.delete('/:id', auth, jobController.deleteJob);
  *         description: 服务器错误
  */
 // router.get('/:jobId/applications', auth, jobController.getJobApplications); // TODO: 暂不支持
+
+router.get('/', jobController.getJobs);
 
 module.exports = router;

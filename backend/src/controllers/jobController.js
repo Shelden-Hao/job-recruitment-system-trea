@@ -364,3 +364,34 @@ exports.getRecommendedJobs = async (req, res) => {
     res.status(500).json({ message: '服务器错误' });
   }
 };
+
+// 获取所有职位
+exports.getJobs = async (req, res) => {
+  try {
+    // 显式指定所有字段，避免访问不存在的列
+    const jobs = await Job.findAll({
+      attributes: [
+        'id', 
+        'title', 
+        'description', 
+        'location', 
+        'salary_range', 
+        'publish_date', 
+        'company_id',
+        // 如果有这些字段，则包含它们
+        'experience',
+        'education',
+        'tags'
+      ],
+      raw: true 
+    });
+    
+    res.json({
+      success: true,
+      data: jobs
+    });
+  } catch (error) {
+    console.error('获取所有职位错误:', error);
+    res.status(500).json({ message: '服务器错误', error: error.message });
+  }
+}
