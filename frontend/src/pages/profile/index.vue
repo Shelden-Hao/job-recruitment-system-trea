@@ -70,7 +70,11 @@ const goToEditProfile = () => {
 // 跳转到简历页面
 const goToResume = () => {
   uni.navigateTo({
-    url: '/pages/jobseeker/resume'
+    url: '/pages/jobseeker/resume',
+    // 传递用户信息作为参数
+    success: (res) => {
+      res.eventChannel.emit('jobseekerId', userInfo.value.jobseekerProfile.id);
+    }
   });
 };
 
