@@ -376,20 +376,49 @@ exports.getUserApplications = async (req, res) => {
       return res.status(400).json({ message: '只有求职者可以查看申请记录' });
     }
 
+    // 构建查询条件，同时检查user_id和jobseeker_id
+    const whereCondition = {
+      [Op.or]: [
+        { user_id: userId },
+        { jobseeker_id: userId }
+      ]
+    };
+
     const applications = await Application.findAll({
+      attributes: [
+        'id', 
+        'status', 
+        'apply_date',
+        'user_id',
+        'job_id',
+        'resume_path',
+        'cover_letter_path',
+        'interview_time'
+      ],
       include: [
         {
           model: sequelize.models.Job,
+          attributes: [
+            'id', 
+            'title', 
+            'description', 
+            'location', 
+            'salary_range', 
+            'publish_date', 
+            'company_id',
+            'experience',
+            'education',
+            'tags'
+          ],
           include: [
             {
-              model: sequelize.models.Company
+              model: sequelize.models.Company,
+              attributes: ['id', 'name', 'logo', 'industry', 'size', 'address']
             }
           ]
         }
       ],
-      where: {
-        jobseeker_id: userId
-      }
+      where: whereCondition
     });
 
     res.json({
