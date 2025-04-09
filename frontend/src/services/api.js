@@ -97,7 +97,7 @@ export const resumeAPI = {
   }),
   getResumeById: (jobseekerId) => axios.get(`/api/resumes/${jobseekerId}`), // 已使用
   applyJob: (jobId, data) => axios.post(`/api/jobs/${jobId}/apply`, data),
-  getApplications: () => axios.get('/api/applications'),
+  getApplications: (userId) => axios.get(`/api/users/${userId}/applications`),
   getCompanyApplications: () => axios.get('/api/company/applications'),
   updateApplicationStatus: (applicationId, status) => axios.put(`/api/applications/${applicationId}/status`, { status })
 };

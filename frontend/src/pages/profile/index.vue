@@ -71,7 +71,7 @@ const goToEditProfile = () => {
 const goToResume = () => {
   uni.navigateTo({
     url: '/pages/jobseeker/resume',
-    // 传递用户信息作为参数
+    // 传递jobseekerId作为参数
     success: (res) => {
       res.eventChannel.emit('jobseekerId', userInfo.value.jobseekerProfile.id);
     }
@@ -81,7 +81,11 @@ const goToResume = () => {
 // 跳转到我的申请页面
 const goToApplications = () => {
   uni.navigateTo({
-    url: '/pages/jobseeker/applications'
+    url: '/pages/jobseeker/applications',
+    // 传递userId作为参数
+    success: (res) => {
+      res.eventChannel.emit('userId', userInfo.value.id);
+    }
   });
 }
 

@@ -3,30 +3,30 @@
     <view class="application-list">
       <view v-for="application in applications" :key="application.id" class="application-card">
         <view class="application-header">
-          <text class="job-title">{{ application.jobTitle }}</text>
-          <text class="application-status" :class="application.status">{{ getStatusText(application.status) }}</text>
+          <text class="job-title">{{ application?.Job?.title }}</text>
+          <text class="application-status" :class="application.status">{{ getStatusText(application?.status) }}</text>
         </view>
 
         <view class="company-info">
-          <image :src="application.companyLogo" mode="aspectFit" class="company-logo"></image>
+          <image :src="application.companyLogo || '/static/images/company-logo.png'" mode="aspectFit" class="company-logo"></image>
           <view class="company-detail">
-            <text class="company-name">{{ application.companyName }}</text>
-            <text class="job-salary">{{ application.salary }}</text>
+            <text class="company-name">{{ application.companyName || '科技有限公司' }}</text>
+            <text class="job-salary">{{ application?.Job?.salary_range }}</text>
           </view>
         </view>
 
         <view class="application-info">
           <view class="info-item">
             <text class="label">申请时间：</text>
-            <text class="value">{{ application.applyTime }}</text>
+            <text class="value">{{ application?.apply_date }}</text>
           </view>
           <view class="info-item">
             <text class="label">工作地点：</text>
-            <text class="value">{{ application.location }}</text>
+            <text class="value">{{ application?.Job?.location }}</text>
           </view>
-          <view v-if="application.interviewTime" class="info-item">
+          <view v-if="application.interview_time" class="info-item">
             <text class="label">面试时间：</text>
-            <text class="value">{{ application.interviewTime }}</text>
+            <text class="value">{{ application?.interview_time }}</text>
           </view>
         </view>
 
@@ -48,36 +48,40 @@
 <script setup>
 import { onLoad } from '@dcloudio/uni-app'
 import { ref } from 'vue';
+import {resumeAPI} from "../../services/api";
 
 const applications = ref([]);
+const userId = ref('');
 
 const fetchApplications = async () => {
   try {
-    // TODO: 实现获取申请列表的API调用
-    applications.value = [
-      {
-        id: 1,
-        jobTitle: '前端开发工程师',
-        status: 'pending',
-        companyLogo: '/static/company-logo.png',
-        companyName: '科技有限公司',
-        salary: '15k-25k',
-        applyTime: '2024-01-15 10:30',
-        location: '深圳',
-        interviewTime: null
-      },
-      {
-        id: 2,
-        jobTitle: '后端开发工程师',
-        status: 'interview',
-        companyLogo: '/static/company-logo.png',
-        companyName: '网络科技有限公司',
-        salary: '20k-35k',
-        applyTime: '2024-01-14 15:20',
-        location: '广州',
-        interviewTime: '2024-01-20 14:30'
-      }
-    ];
+    // applications.value = [
+    //   {
+    //     id: 1,
+    //     jobTitle: '前端开发工程师',
+    //     status: 'pending',
+    //     companyLogo: '/static/company-logo.png',
+    //     companyName: '科技有限公司',
+    //     salary: '15k-25k',
+    //     applyTime: '2024-01-15 10:30',
+    //     location: '深圳',
+    //     interviewTime: null
+    //   },
+    //   {
+    //     id: 2,
+    //     jobTitle: '后端开发工程师',
+    //     status: 'interview',
+    //     companyLogo: '/static/company-logo.png',
+    //     companyName: '网络科技有限公司',
+    //     salary: '20k-35k',
+    //     applyTime: '2024-01-14 15:20',
+    //     location: '广州',
+    //     interviewTime: '2024-01-20 14:30'
+    //   }
+    // ];
+    const result = await resumeAPI.getApplications(userId.value);
+    console.log("=>(applications.vue:83) result", result);
+    applications.value = result.data.data;
   } catch (error) {
     console.error('获取申请列表失败:', error);
     uni.showToast({
@@ -139,7 +143,13 @@ const handleViewDetail = (applicationId) => {
 };
 
 onLoad(() => {
-  fetchApplications();
+  const pages = getCurrentPages();
+  const currentPage = pages[pages.length - 1];
+  const eventChannel = currentPage.getOpenerEventChannel();
+  eventChannel.on('userId', (params) => {
+    userId.value = params;
+    fetchApplications();
+  });
 });
 </script>
 
