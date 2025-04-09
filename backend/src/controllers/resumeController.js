@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
     // 生成唯一文件名
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    cb(null, `resume-${req.user.id}-${uniqueSuffix}${ext}`);
+    cb(null, `resume-${req.id}-${uniqueSuffix}${ext}`);
   }
 });
 
@@ -47,34 +47,33 @@ const upload = multer({
 exports.uploadResume = (req, res) => {
   // 使用multer中间件处理单个文件上传
   const uploadMiddleware = upload.single('resume');
-  
+
   uploadMiddleware(req, res, async (err) => {
     try {
       if (err) {
         return res.status(400).json({ message: err.message });
       }
-      
+
       if (!req.file) {
         return res.status(400).json({ message: '请选择要上传的简历文件' });
       }
-      
+
       // 查找求职者信息
-      const jobseeker = await JobSeeker.findOne({ where: { userId: req.user.id } });
+      const jobseeker = await JobSeeker.findOne({ where: { user_id: req.query.userId } });
       if (!jobseeker) {
         // 删除已上传的文件
         fs.unlinkSync(req.file.path);
         return res.status(404).json({ message: '求职者信息不存在' });
       }
-      
+
       // 更新求职者简历信息
       await jobseeker.update({
-        resumeUrl: `/uploads/resumes/${path.basename(req.file.path)}`,
-        lastUpdated: new Date()
+        resume_url: `/uploads/resumes/${path.basename(req.file.path)}`
       });
-      
+
       res.status(200).json({
         message: '简历上传成功',
-        resumeUrl: `/uploads/resumes/${path.basename(req.file.path)}`
+        resume_url: `/uploads/resumes/${path.basename(req.file.path)}`
       });
     } catch (error) {
       console.error('简历上传错误:', error);
