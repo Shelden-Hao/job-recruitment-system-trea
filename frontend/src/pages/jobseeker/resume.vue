@@ -79,6 +79,14 @@
         </view>
       </view>
     </view>
+<!--    新增一个简历上传的按钮-->
+    <view class="upload-button">
+      <!-- 移除HTML input元素 -->
+      <button class="upload-button-text" @click="handleResumeUpload" :disabled="uploading">
+        {{ uploading ? '上传中...' : '上传简历' }}
+      </button>
+      <text v-if="resume_url" class="resume-url">当前简历网站地址: {{ 'http://localhost:3000/uploads/resumes/' + getResumeFileName(resume_url) }}</text>
+    </view>
   </view>
 </template>
 
@@ -123,9 +131,15 @@ const experiences = [
 ]
 
 const resume = ref({})
+const resume_url = ref('')
 // 获取从用户主页传递过来的jobseekerId
 const jobseekerId = ref('')
-
+// 获取从用户主页传递过来的userId
+const userId = ref('')
+// 上传状态
+const uploading = ref(false)
+// 上传的文件路径
+const resumeUrl = ref('')
 
 const fetchResume = async () => {
   try {
@@ -179,6 +193,138 @@ const handleDeleteExperience = (index) => {
   });
 };
 
+// 恢复handleResumeUpload方法，使用uni API选择文件
+const handleResumeUpload = () => {
+  // 使用uni.chooseFile或在小程序中使用uni.chooseMessageFile
+  // #ifdef H5 || APP-PLUS
+  uni.chooseFile({
+    count: 1,
+    type: 'all',
+    extension: ['.pdf', '.doc', '.docx'],
+    success: (res) => {
+      if (res.tempFiles && res.tempFiles.length > 0) {
+        const file = res.tempFiles[0];
+        // 检查文件大小
+        if (file.size > 5 * 1024 * 1024) {
+          uni.showToast({
+            title: '文件大小不能超过5MB',
+            icon: 'none'
+          });
+          return;
+        }
+        uploadFile(file);
+      }
+    },
+    fail: (err) => {
+      console.error('选择文件失败:', err);
+    }
+  });
+  // #endif
+  
+  // #ifdef MP
+  // 微信小程序使用chooseMessageFile
+  uni.chooseMessageFile({
+    count: 1,
+    type: 'file',
+    extension: ['.pdf', '.doc', '.docx'],
+    success: (res) => {
+      if (res.tempFiles && res.tempFiles.length > 0) {
+        const file = res.tempFiles[0];
+        // 检查文件类型
+        const fileName = file.name || '';
+        const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        if (!['pdf', 'doc', 'docx'].includes(fileExt)) {
+          uni.showToast({
+            title: '只支持PDF或Word文档',
+            icon: 'none'
+          });
+          return;
+        }
+        
+        // 检查文件大小
+        if (file.size > 5 * 1024 * 1024) {
+          uni.showToast({
+            title: '文件大小不能超过5MB',
+            icon: 'none'
+          });
+          return;
+        }
+        
+        uploadFile(file);
+      }
+    },
+    fail: (err) => {
+      console.error('选择文件失败:', err);
+      uni.showToast({
+        title: '选择文件失败',
+        icon: 'none'
+      });
+    }
+  });
+  // #endif
+};
+
+const uploadFile = (file) => {
+  uploading.value = true;
+  
+  // 使用uni.uploadFile代替fetch
+  uni.uploadFile({
+    url: `http://localhost:3000/api/resumes/upload?userId=${userId.value}`, // 将 userId 作为查询参数
+    filePath: file.path || file.tempFilePath,
+    name: 'resume',
+    formData: {
+      // 不再在formData中包含user_id
+    },
+    header: {
+      'Authorization': `Bearer ${uni.getStorageSync('token')}` // 使用uni.getStorageSync替代localStorage
+    },
+    success: (res) => {
+      try {
+        const result = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+        if (res.statusCode === 200 && result.resume_url) {
+          resume_url.value = result.resume_url;
+          
+          uni.showToast({
+            title: '简历上传成功',
+            icon: 'success'
+          });
+          
+          // 更新简历信息
+          fetchResume();
+        } else {
+          uni.showToast({
+            title: result.message || '上传失败',
+            icon: 'none'
+          });
+        }
+      } catch (error) {
+        uni.showToast({
+          title: '处理响应失败',
+          icon: 'none'
+        });
+      }
+    },
+    fail: (err) => {
+      console.error('上传文件失败:', err);
+      uni.showToast({
+        title: '上传文件失败',
+        icon: 'none'
+      });
+    },
+    complete: () => {
+      uploading.value = false;
+    }
+  });
+};
+
+// 获取简历文件名
+const getResumeFileName = (url) => {
+  if (!url) return '';
+  // 打开简历的url
+  console.log(url.split('/'))
+  return url.split('/').pop();
+}
+
 onLoad(() => {
   const pages = getCurrentPages();
   const currentPage = pages[pages.length - 1];
@@ -186,6 +332,9 @@ onLoad(() => {
   eventChannel.on('jobseekerId', (params) => {
     jobseekerId.value = params;
     fetchResume();
+  });
+  eventChannel.on('userId', (params) => {
+    userId.value = params;
   });
 });
 </script>
@@ -308,6 +457,34 @@ onLoad(() => {
         }
       }
     }
+  }
+}
+
+.upload-button {
+  margin-top: 30rpx;
+  text-align: center;
+  
+  .upload-button-text {
+    margin: 0 auto 20rpx;
+    font-size: 28rpx;
+    line-height: 2;
+    background-color: #409eff;
+    color: #fff;
+    padding: 10rpx 30rpx;
+    border-radius: 8rpx;
+    width: 80%;
+    
+    &:disabled {
+      background-color: #a0cfff;
+    }
+  }
+  
+  .resume-url {
+    display: block;
+    font-size: 24rpx;
+    color: #666;
+    margin-top: 20rpx;
+    word-break: break-all;
   }
 }
 </style>

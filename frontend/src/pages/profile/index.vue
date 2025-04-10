@@ -74,6 +74,7 @@ const goToResume = () => {
     // 传递jobseekerId作为参数
     success: (res) => {
       res.eventChannel.emit('jobseekerId', userInfo.value.jobseekerProfile.id);
+      res.eventChannel.emit('userId', userInfo.value.id);
     }
   });
 };
