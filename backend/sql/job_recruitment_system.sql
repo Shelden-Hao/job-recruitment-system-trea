@@ -14,6 +14,10 @@
  Date: 06/04/2025 23:12:38
 */
 
+-- 创建 schema job_recruitment_system
+-- CREATE SCHEMA IF NOT EXISTS `job_recruitment_system` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+-- USE `job_recruitment_system`;
+
 SET NAMES utf8mb4;
 SET
 FOREIGN_KEY_CHECKS = 0;
