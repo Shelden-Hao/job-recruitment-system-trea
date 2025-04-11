@@ -29,8 +29,9 @@
 </template>
 
 <script setup>
-import { onLoad } from '@dcloudio/uni-app';
+import { onLoad, onUnload } from '@dcloudio/uni-app';
 import { ref } from 'vue';
+import { io } from '@hyoga/uni-socket.io';
 
 const messages = ref([]);
 const loading = ref(false);
@@ -101,9 +102,91 @@ const goToChat = (messageId) => {
   });
 };
 
+const testWebsocket = () => {
+  console.log('开始测试WebSocket连接...');
+  
+  try {
+    // 明确指定传输方式和路径
+    const socket = io('http://localhost:3000', {
+      transports: ['websocket', 'polling'],
+      path: '/socket.io',
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
+    });
+
+    // 连接事件
+    socket.on('connect', () => {
+      console.log('WebSocket连接已建立，socket ID:', socket.id);
+    });
+
+    socket.on('message', (message) => {
+      // 处理收到的消息
+      console.log('收到WebSocket消息：', message);
+    });
+
+    // 连接错误事件
+    socket.on('connect_error', (error) => {
+      console.error('WebSocket连接错误:', error.message);
+    });
+
+    // 连接超时事件
+    socket.on('connect_timeout', () => {
+      console.error('WebSocket连接超时');
+    });
+
+    // 重连尝试事件
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      console.log(`WebSocket尝试重连 (${attemptNumber})`);
+    });
+
+    // 重连成功事件
+    socket.on('reconnect', (attemptNumber) => {
+      console.log(`WebSocket重连成功，尝试次数: ${attemptNumber}`);
+    });
+
+    // 重连失败事件
+    socket.on('reconnect_failed', () => {
+      console.error('WebSocket重连失败');
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('WebSocket连接已断开，原因:', reason);
+    });
+
+    socket.on('error', (error) => {
+      console.error('WebSocket错误：', error);
+    });
+    
+    // 发送一条测试消息
+    setTimeout(() => {
+      console.log('发送测试消息...');
+      socket.emit('message', {text: '这是一条测试消息', time: new Date().toISOString()});
+    }, 2000);
+
+    // 保存socket实例以便后续使用
+    return socket;
+  } catch (e) {
+    console.error('创建WebSocket连接时发生错误:', e);
+    return null;
+  }
+};
+
+// 保存socket实例
+let socketInstance = null;
+
 // 页面加载时获取消息列表
 onLoad(() => {
   fetchMessages();
+  socketInstance = testWebsocket();
+});
+
+// 页面卸载时关闭Socket连接
+onUnload(() => {
+  if (socketInstance && socketInstance.connected) {
+    console.log('关闭WebSocket连接...');
+    socketInstance.disconnect();
+  }
 });
 </script>
 

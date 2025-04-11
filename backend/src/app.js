@@ -23,10 +23,22 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
+    origin: "*", // 允许所有来源，生产环境应该限制
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'], // 支持WebSocket和轮询
+  pingTimeout: 30000, // 超时设置
+  pingInterval: 25000, // 心跳间隔
+  path: '/socket.io', // 确保路径正确
+  serveClient: true, // 提供Socket.IO客户端代码
+  connectTimeout: 45000 // 连接超时
 });
+
+// 输出Socket.IO配置信息
+console.log('Socket.IO配置已完成，传输方式:', io.engine.opts.transports);
+console.log('Socket.IO CORS设置:', io.engine.opts.cors);
 
 // Swagger配置
 const swaggerOptions = {
