@@ -29,12 +29,42 @@
 </template>
 
 <script setup>
-import { onLoad, onUnload } from '@dcloudio/uni-app';
+import { onLoad, onUnload, onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { io } from '@hyoga/uni-socket.io';
 
 const messages = ref([]);
 const loading = ref(false);
+
+// 从本地存储获取最新消息
+const getLatestMessageFromStorage = (chatId) => {
+  try {
+    const storedData = uni.getStorageSync(`chat_${chatId}`);
+    if (storedData) {
+      const data = JSON.parse(storedData);
+      if (data.messages && data.messages.length > 0) {
+        const latestMessage = data.messages[data.messages.length - 1];
+        return {
+          content: latestMessage.content,
+          time: latestMessage.createdAt
+        };
+      }
+    }
+  } catch (e) {
+    console.error('获取本地存储的最新消息失败:', e);
+  }
+  return null;
+};
+
+// 更新消息列表项的最新消息
+const updateMessageWithLatestContent = (message) => {
+  const latest = getLatestMessageFromStorage(message.id);
+  if (latest) {
+    message.lastMessage = latest.content;
+    message.lastTime = latest.time;
+  }
+  return message;
+};
 
 // 获取消息列表（使用假数据）
 const fetchMessages = () => {
@@ -42,7 +72,7 @@ const fetchMessages = () => {
   
   // 模拟API加载延迟
   setTimeout(() => {
-    messages.value = [
+    const initialMessages = [
       {
         id: 1,
         name: '张三',
@@ -82,13 +112,16 @@ const fetchMessages = () => {
       {
         id: 5,
         name: '科技有限公司',
-        avatar: '/static/images/company-logo.png',
+        avatar: '/static/images/default-avatar.png',
         lastMessage: '恭喜您通过我们的面试，请问您什么时候可以入职？',
         lastTime: '2024/03/20',
         unread: true,
         unreadCount: 3
       }
     ];
+    
+    // 更新消息列表中的最新消息内容（从本地存储获取）
+    messages.value = initialMessages.map(updateMessageWithLatestContent);
     
     loading.value = false;
   }, 500);
@@ -98,7 +131,7 @@ const fetchMessages = () => {
 const goToChat = (messageId) => {
   // 直接通过URL参数传递消息ID
   uni.navigateTo({
-    url: `/pages/message/chat`
+    url: `/pages/message/chat?id=${messageId}`
   });
 };
 
@@ -179,6 +212,11 @@ let socketInstance = null;
 onLoad(() => {
   fetchMessages();
   socketInstance = testWebsocket();
+});
+
+// 每次页面显示时重新获取消息列表（以便更新最新消息）
+onShow(() => {
+  fetchMessages();
 });
 
 // 页面卸载时关闭Socket连接

@@ -16,6 +16,7 @@ const messages = ref([]);
 const loading = ref(false);
 const messageContent = ref('');
 const scrollIntoView = ref('');
+const currentChatId = ref('');
 
 // 消息假数据映射表
 const messageDataMap = {
@@ -210,16 +211,44 @@ const messageDataMap = {
   }
 };
 
+// 从本地存储加载聊天数据
+const loadFromLocalStorage = (chatId) => {
+  try {
+    const storedData = uni.getStorageSync(`chat_${chatId}`);
+    if (storedData) {
+      return JSON.parse(storedData);
+    }
+  } catch (e) {
+    console.error('从本地存储加载聊天数据失败:', e);
+  }
+  return null;
+};
+
+// 保存聊天数据到本地存储
+const saveToLocalStorage = (chatId) => {
+  try {
+    const dataToSave = {
+      contact: contactInfo.value,
+      messages: messages.value
+    };
+    uni.setStorageSync(`chat_${chatId}`, JSON.stringify(dataToSave));
+  } catch (e) {
+    console.error('保存聊天数据到本地存储失败:', e);
+  }
+};
+
 // 根据消息ID加载对应的假数据
 const loadMessages = (messageId) => {
   loading.value = true;
+  currentChatId.value = messageId;
   
-  // 模拟API加载延迟
-  setTimeout(() => {
-    const messageData = messageDataMap[messageId] || messageDataMap[1]; // 默认使用ID为1的数据
-    
-    contactInfo.value = messageData.contact;
-    messages.value = messageData.messages;
+  // 先尝试从本地存储加载数据
+  const storedData = loadFromLocalStorage(messageId);
+  
+  if (storedData) {
+    // 如果本地存储有数据，使用本地存储的数据
+    contactInfo.value = storedData.contact;
+    messages.value = storedData.messages;
     
     loading.value = false;
     
@@ -230,7 +259,29 @@ const loadMessages = (messageId) => {
     
     // 滚动到最新消息
     scrollToBottom();
-  }, 500);
+  } else {
+    // 否则使用初始假数据
+    // 模拟API加载延迟
+    setTimeout(() => {
+      const messageData = messageDataMap[messageId] || messageDataMap[1]; // 默认使用ID为1的数据
+      
+      contactInfo.value = messageData.contact;
+      messages.value = messageData.messages;
+      
+      // 保存到本地存储
+      saveToLocalStorage(messageId);
+      
+      loading.value = false;
+      
+      // 设置页面标题为联系人名称
+      uni.setNavigationBarTitle({
+        title: contactInfo.value.name
+      });
+      
+      // 滚动到最新消息
+      scrollToBottom();
+    }, 500);
+  }
 };
 
 // 发送消息
@@ -259,6 +310,9 @@ const sendMessage = () => {
   
   messages.value.push(newMessage);
   messageContent.value = '';
+  
+  // 保存到本地存储
+  saveToLocalStorage(currentChatId.value);
   
   // 滚动到最新消息
   setTimeout(() => {
