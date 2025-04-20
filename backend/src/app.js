@@ -16,6 +16,7 @@ const skillRoutes = require('./routes/api/skills');
 const messageRoutes = require('./routes/api/messages');
 const reviewRoutes = require('./routes/api/reviews');
 const resumeRoutes = require('./routes/api/resumes');
+const jobseekerRoutes = require('./routes/api/jobseekers');
 const socketHandler = require('./socket');
 require('dotenv').config();
 
@@ -83,6 +84,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/resumes', resumeRoutes);
+app.use('/api/jobseekers', jobseekerRoutes);
 
 // swagger json 路由
 app.get('/api-swagger.json', (req, res) => {

@@ -82,7 +82,10 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
 
       try {
-        const response = await authAPI.getCurrentUser(id);
+        const response = await authAPI.getCurrentUser({id});
+        this.user = response.data;
+        // 保存用户信息到本地存储，包括jobseekerProfile信息
+        uni.setStorageSync('user', response.data);
         return response.data;
       } catch (error) {
         if (error.response?.status === 401) {

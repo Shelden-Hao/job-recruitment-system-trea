@@ -76,7 +76,8 @@ export const authAPI = {
 export const userAPI = {
   getUserById: (id) => axios.get(`/api/users/${id}`), // 已使用
   updateUser: (id, userData) => axios.put(`/api/users/${id}`, userData),
-  deleteUser: (id) => axios.delete(`/api/users/${id}`)
+  deleteUser: (id) => axios.delete(`/api/users/${id}`),
+  updateJobseeker: (id, jobseekerData) => axios.put(`/api/jobseekers/${id}`, jobseekerData)
 };
 
 // 职位相关API
