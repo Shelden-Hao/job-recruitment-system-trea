@@ -242,6 +242,42 @@ const genderIndex = ref(0);
 const isJobSeeker = computed(() => formData.value.role === "jobseeker");
 const isCompany = computed(() => formData.value.role === "company");
 
+// 从本地存储加载简历信息
+const loadResumeFromLocalStorage = () => {
+  try {
+    const userId = uni.getStorageSync('user')?.id;
+    if (!userId) return;
+    
+    const localResume = uni.getStorageSync(`resume_${userId}`);
+    if (localResume) {
+      const resumeInfo = JSON.parse(localResume);
+      resumeData.value = { ...resumeData.value, ...resumeInfo };
+      
+      // 设置性别选择器初始值
+      if (resumeInfo.gender) {
+        genderIndex.value = genderOptions.indexOf(resumeInfo.gender);
+      }
+      
+      console.log('已从本地存储加载简历信息:', resumeData.value);
+    }
+  } catch (error) {
+    console.error('从本地存储加载简历信息失败:', error);
+  }
+};
+
+// 将简历信息保存到本地存储
+const saveResumeToLocalStorage = () => {
+  try {
+    const userId = uni.getStorageSync('user')?.id;
+    if (!userId) return;
+    
+    uni.setStorageSync(`resume_${userId}`, JSON.stringify(resumeData.value));
+    console.log('简历信息已保存到本地存储');
+  } catch (error) {
+    console.error('保存简历信息到本地存储失败:', error);
+  }
+};
+
 // 获取用户信息
 const fetchUserInfo = async () => {
   try {
@@ -257,7 +293,9 @@ const fetchUserInfo = async () => {
       formData.value.companyName = result.data.data.companyName;
       formData.value.companyAddress = result.data.data.companyAddress;
     } else if (result.data.data.role === 'jobseeker') {
-      // 如果是求职者，获取简历信息
+      // 先从本地存储获取简历信息
+      loadResumeFromLocalStorage();
+      // 再从API获取简历信息（如果API获取到更新信息会覆盖本地存储）
       fetchResumeInfo(result.data.data.jobseekerProfile?.id);
     }
   } catch (error) {
@@ -266,6 +304,10 @@ const fetchUserInfo = async () => {
       title: "获取用户信息失败",
       icon: "none",
     });
+    // 获取API信息失败，仍然尝试从本地存储获取
+    if (formData.value.role === 'jobseeker') {
+      loadResumeFromLocalStorage();
+    }
   }
 };
 
@@ -278,19 +320,27 @@ const fetchResumeInfo = async (jobseekerId) => {
     console.log("=>(edit.vue:resume) result", result);
     const jobseeker = result.data.jobseeker;
     
-    resumeData.value.fullName = jobseeker.fullName || '';
-    resumeData.value.gender = jobseeker.gender || '';
-    resumeData.value.birthDate = jobseeker.birthDate || '';
-    resumeData.value.selfIntroduction = jobseeker.selfIntroduction || '';
-    resumeData.value.expectedPosition = jobseeker.expectedPosition || '';
-    resumeData.value.expectedSalary = jobseeker.expectedSalary || '';
-    resumeData.value.expectedLocation = jobseeker.expectedLocation || '';
-    resumeData.value.resumeUrl = jobseeker.resumeUrl || '';
+    // 合并API返回的数据与本地数据
+    const updatedResume = {
+      fullName: jobseeker.fullName || resumeData.value.fullName || '',
+      gender: jobseeker.gender || resumeData.value.gender || '',
+      birthDate: jobseeker.birthDate || resumeData.value.birthDate || '',
+      selfIntroduction: jobseeker.selfIntroduction || resumeData.value.selfIntroduction || '',
+      expectedPosition: jobseeker.expectedPosition || resumeData.value.expectedPosition || '',
+      expectedSalary: jobseeker.expectedSalary || resumeData.value.expectedSalary || '',
+      expectedLocation: jobseeker.expectedLocation || resumeData.value.expectedLocation || '',
+      resumeUrl: jobseeker.resumeUrl || resumeData.value.resumeUrl || '',
+    };
+    
+    resumeData.value = updatedResume;
     
     // 设置性别选择器初始值
     if (jobseeker.gender) {
       genderIndex.value = genderOptions.indexOf(jobseeker.gender);
     }
+    
+    // 将API获取的数据保存到本地
+    saveResumeToLocalStorage();
   } catch (error) {
     console.error("获取简历信息失败:", error);
     uni.showToast({
@@ -337,6 +387,10 @@ const birthDateChange = (e) => {
 // 切换简历编辑模式
 const toggleResumeEdit = () => {
   showResumeEdit.value = !showResumeEdit.value;
+  // 每次切换时都保存到本地存储
+  if (!showResumeEdit.value) {
+    saveResumeToLocalStorage();
+  }
 };
 
 // 上传简历文件
@@ -450,23 +504,31 @@ const handleSubmit = async () => {
       }
     );
     
-    // 2. 如果是求职者，更新简历信息
+    // 2. 如果是求职者，更新简历信息并保存到本地
     if (isJobSeeker.value) {
+      // 保存到本地存储
+      saveResumeToLocalStorage();
+      
       const jobseekerId = uni.getStorageSync('user').jobseekerProfile?.id;
       if (jobseekerId) {
-        await userAPI.updateJobseeker(
-          jobseekerId,
-          {
-            fullName: resumeData.value.fullName,
-            gender: resumeData.value.gender,
-            birthDate: resumeData.value.birthDate,
-            selfIntroduction: resumeData.value.selfIntroduction,
-            expectedPosition: resumeData.value.expectedPosition,
-            expectedSalary: resumeData.value.expectedSalary,
-            expectedLocation: resumeData.value.expectedLocation,
-            // 其他简历字段...
-          }
-        );
+        try {
+          await userAPI.updateJobseeker(
+            jobseekerId,
+            {
+              fullName: resumeData.value.fullName,
+              gender: resumeData.value.gender,
+              birthDate: resumeData.value.birthDate,
+              selfIntroduction: resumeData.value.selfIntroduction,
+              expectedPosition: resumeData.value.expectedPosition,
+              expectedSalary: resumeData.value.expectedSalary,
+              expectedLocation: resumeData.value.expectedLocation,
+              // 其他简历字段...
+            }
+          );
+        } catch (resumeError) {
+          console.error("更新简历API失败，但已保存到本地:", resumeError);
+          // 即使API更新失败，本地存储也已更新
+        }
       }
     }
     
@@ -486,10 +548,20 @@ const handleSubmit = async () => {
     }, 1500);
   } catch (error) {
     console.error("更新用户信息失败:", error);
-    uni.showToast({
-      title: "保存失败，请重试",
-      icon: "none",
-    });
+    
+    // 即使API调用失败，仍然保存到本地存储
+    if (isJobSeeker.value) {
+      saveResumeToLocalStorage();
+      uni.showToast({
+        title: "已保存到本地",
+        icon: "success",
+      });
+    } else {
+      uni.showToast({
+        title: "保存失败，请重试",
+        icon: "none",
+      });
+    }
   }
 };
 
