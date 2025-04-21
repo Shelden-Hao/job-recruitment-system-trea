@@ -113,10 +113,18 @@ export default {
 
     const checkApplicationStatus = async (jobId) => {
       try {
-        // TODO: 实现检查申请状态的API调用
-        hasApplied.value = false;
+        // 从本地存储获取申请记录
+        const existingApplications = uni.getStorageSync('applications');
+        if (existingApplications) {
+          const applications = JSON.parse(existingApplications);
+          // 检查是否包含当前职位ID
+          hasApplied.value = applications.some(app => app.jobId == jobId);
+        } else {
+          hasApplied.value = false;
+        }
       } catch (error) {
         console.error('检查申请状态失败:', error);
+        hasApplied.value = false;
       }
     };
 
@@ -130,15 +138,68 @@ export default {
 
       try {
         loading.value = true;
-        // TODO: 实现申请职位的API调用
+        
+        // 获取当前用户信息
+        const currentUser = uni.getStorageSync('user') || {};
+        
+        // 创建申请记录
+        const applicationData = {
+          id: Date.now(), // 临时ID
+          jobId: jobDetail.value.id,
+          apply_date: new Date().toISOString(),
+          status: 'pending',
+          userId: currentUser.id || '1', // 如果未登录，使用临时ID
+          Job: {
+            ...jobDetail.value
+          }
+        };
+        
+        // 模拟API请求延迟
         await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // 获取现有申请记录
+        let applications = [];
+        try {
+          const existingApplications = uni.getStorageSync('applications');
+          if (existingApplications) {
+            applications = JSON.parse(existingApplications);
+          }
+        } catch (e) {
+          console.error('读取本地申请记录失败', e);
+        }
+        
+        // 检查是否已申请过该职位
+        const alreadyApplied = applications.some(app => app.jobId === jobDetail.value.id);
+        if (alreadyApplied) {
+          uni.showToast({
+            title: '您已申请过该职位',
+            icon: 'none'
+          });
+          hasApplied.value = true;
+          loading.value = false;
+          return;
+        }
+        
+        // 添加新申请记录
+        applications.push(applicationData);
+        
+        // 保存到本地存储
+        uni.setStorageSync('applications', JSON.stringify(applications));
 
         hasApplied.value = true;
         uni.showToast({
           title: '申请成功',
           icon: 'success'
         });
+        
+        // 可选：跳转到申请列表页面
+        // setTimeout(() => {
+        //   uni.navigateTo({
+        //     url: '/pages/jobseeker/applications'
+        //   });
+        // }, 1500);
       } catch (error) {
+        console.error('申请失败:', error);
         uni.showToast({
           title: error.message || '申请失败',
           icon: 'none'

@@ -55,39 +55,54 @@ const userId = ref('');
 
 const fetchApplications = async () => {
   try {
-    // applications.value = [
-    //   {
-    //     id: 1,
-    //     jobTitle: '前端开发工程师',
-    //     status: 'pending',
-    //     companyLogo: '/static/company-logo.png',
-    //     companyName: '科技有限公司',
-    //     salary: '15k-25k',
-    //     applyTime: '2024-01-15 10:30',
-    //     location: '深圳',
-    //     interviewTime: null
-    //   },
-    //   {
-    //     id: 2,
-    //     jobTitle: '后端开发工程师',
-    //     status: 'interview',
-    //     companyLogo: '/static/company-logo.png',
-    //     companyName: '网络科技有限公司',
-    //     salary: '20k-35k',
-    //     applyTime: '2024-01-14 15:20',
-    //     location: '广州',
-    //     interviewTime: '2024-01-20 14:30'
-    //   }
-    // ];
-    const result = await resumeAPI.getApplications(userId.value);
-    console.log("=>(applications.vue:83) result", result);
-    applications.value = result.data.data;
+    // 显示加载状态
+    uni.showLoading({
+      title: '加载中...'
+    });
+    
+    // 从本地存储获取申请记录
+    const existingApplications = uni.getStorageSync('applications');
+    if (existingApplications) {
+      const allApplications = JSON.parse(existingApplications);
+      // 如果传入了userId参数，过滤出该用户的申请记录
+      if (userId.value) {
+        applications.value = allApplications.filter(app => app.userId == userId.value);
+      } else {
+        applications.value = allApplications;
+      }
+      
+      // 对申请记录按时间排序，最新的在前面
+      applications.value.sort((a, b) => new Date(b.apply_date) - new Date(a.apply_date));
+    } else {
+      applications.value = [];
+    }
+    
+    // 可选：模拟API请求延迟
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // 如果没有找到申请记录，可以尝试API请求获取
+    if (applications.value.length === 0 && userId.value) {
+      try {
+        const result = await resumeAPI.getApplications(userId.value);
+        if (result.data && result.data.data) {
+          applications.value = result.data.data;
+          // 将API获取的数据也保存到本地存储
+          uni.setStorageSync('applications', JSON.stringify(applications.value));
+        }
+      } catch (apiError) {
+        console.error('API获取申请列表失败:', apiError);
+        // API失败也不影响展示本地数据
+      }
+    }
   } catch (error) {
     console.error('获取申请列表失败:', error);
     uni.showToast({
       title: '获取申请列表失败',
       icon: 'none'
     });
+  } finally {
+    // 隐藏加载状态
+    uni.hideLoading();
   }
 };
 
@@ -109,20 +124,58 @@ const handleCancel = async (applicationId) => {
     success: async (res) => {
       if (res.confirm) {
         try {
-          // TODO: 实现撤销申请的API调用
-          const application = applications.value.find(item => item.id === applicationId);
-          if (application) {
-            application.status = 'cancelled';
+          // 显示加载状态
+          uni.showLoading({
+            title: '处理中...'
+          });
+          
+          // 查找本地应用记录
+          const existingApplications = uni.getStorageSync('applications');
+          if (existingApplications) {
+            let allApplications = JSON.parse(existingApplications);
+            
+            // 找到并更新该申请记录的状态
+            const applicationIndex = allApplications.findIndex(app => app.id === applicationId);
+            if (applicationIndex !== -1) {
+              allApplications[applicationIndex].status = 'cancelled';
+              
+              // 更新本地存储
+              uni.setStorageSync('applications', JSON.stringify(allApplications));
+              
+              // 更新视图
+              const appIndex = applications.value.findIndex(app => app.id === applicationId);
+              if (appIndex !== -1) {
+                applications.value[appIndex].status = 'cancelled';
+              }
+              
+              // 模拟API请求延迟
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              uni.showToast({
+                title: '已撤销申请',
+                icon: 'success'
+              });
+            } else {
+              uni.showToast({
+                title: '未找到申请记录',
+                icon: 'none'
+              });
+            }
+          } else {
             uni.showToast({
-              title: '已撤销申请',
-              icon: 'success'
+              title: '未找到申请记录',
+              icon: 'none'
             });
           }
         } catch (error) {
+          console.error('撤销申请失败:', error);
           uni.showToast({
             title: '操作失败',
             icon: 'none'
           });
+        } finally {
+          // 隐藏加载状态
+          uni.hideLoading();
         }
       }
     }
@@ -137,9 +190,33 @@ const handleViewInterview = (applicationId) => {
 };
 
 const handleViewDetail = (applicationId) => {
-  uni.navigateTo({
-    url: `/pages/jobs/detail?id=${applicationId}`
-  });
+  try {
+    // 查找对应的申请记录
+    const application = applications.value.find(app => app.id === applicationId);
+    
+    if (application && application.jobId) {
+      // 跳转到职位详情页
+      uni.navigateTo({
+        url: `/pages/jobs/detail?id=${application.jobId}`
+      });
+    } else if (application && application.Job && application.Job.id) {
+      // 替代方案：如果申请记录中包含完整的Job对象
+      uni.navigateTo({
+        url: `/pages/jobs/detail?id=${application.Job.id}`
+      });
+    } else {
+      uni.showToast({
+        title: '未找到职位信息',
+        icon: 'none'
+      });
+    }
+  } catch (error) {
+    console.error('跳转职位详情失败:', error);
+    uni.showToast({
+      title: '跳转失败',
+      icon: 'none'
+    });
+  }
 };
 
 onLoad(() => {
