@@ -11,7 +11,7 @@
  Target Server Version : 80200
  File Encoding         : 65001
 
- Date: 15/04/2025 10:54:38
+ Date: 21/04/2025 19:18:16
 */
 
 SET NAMES utf8mb4;
@@ -40,7 +40,7 @@ CREATE TABLE `applications`  (
   CONSTRAINT `applications_ibfk_15` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `applications_ibfk_16` FOREIGN KEY (`job_id`) REFERENCES `jobs` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `applications_ibfk_8` FOREIGN KEY (`jobseeker_id`) REFERENCES `jobseekers` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of applications
@@ -65,7 +65,7 @@ CREATE TABLE `companies`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `user_id`(`user_id` ASC) USING BTREE,
   CONSTRAINT `companies_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of companies
@@ -93,7 +93,7 @@ CREATE TABLE `conversations`  (
   CONSTRAINT `conversations_ibfk_13` FOREIGN KEY (`user_id1`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `conversations_ibfk_14` FOREIGN KEY (`user_id2`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT `conversations_ibfk_15` FOREIGN KEY (`last_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of conversations
@@ -182,7 +182,7 @@ CREATE TABLE `jobs`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `fk_jobs_companies_idx`(`company_id` ASC) USING BTREE,
   CONSTRAINT `fk_jobs_companies` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of jobs
@@ -289,7 +289,7 @@ CREATE TABLE `skills`  (
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '技能名称',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of skills
@@ -362,7 +362,7 @@ CREATE TABLE `users`  (
   UNIQUE INDEX `username`(`username` ASC) USING BTREE,
   INDEX `fk_users_companies_idx`(`company_id` ASC) USING BTREE,
   CONSTRAINT `fk_users_companies` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of users
@@ -371,7 +371,7 @@ INSERT INTO `users` VALUES (1, 'zhangsan', '$2a$10$passwordhash123', 'seeker', '
 INSERT INTO `users` VALUES (2, 'lisi', '$2a$10$anotherhash456', 'recruiter', 'lisi@example.com', '13987654321', '2025-04-05 16:39:34', NULL, 2, '李四', '/static/images/default-avatar.png', '招聘者，负责公司技术人才招聘。');
 INSERT INTO `users` VALUES (3, 'wangwu', '$2a$10$yetanotherhash789', 'admin', 'wangwu@example.com', '13322223333', '2025-04-05 16:39:34', NULL, NULL, '王五', '/static/images/default-avatar.png', '管理员。');
 INSERT INTO `users` VALUES (4, 'zhaoliu', '$2a$10$zhaoliuhash', 'recruiter', 'zhaoliu@example.com', '13322224444', '2025-04-05 16:39:34', NULL, 1, '赵六', '/static/images/default-avatar.png', '负责公司招聘');
-INSERT INTO `users` VALUES (12, 'jobseeker1', '$2a$10$O7fnKJMFYK4GcyGhHDNA5OVzhPuHYBgcsQ3s846xjLmUalSEcEAJ2', 'jobseeker', 'jobseeker1@example.com', '13345657788', '2025-04-06 15:48:46', '2025-04-07 14:13:11', NULL, 'jobseeker1', '/static/images/default-avatar.png', '求职者，期望从事前端开发相关工作。');
+INSERT INTO `users` VALUES (12, 'jobseeker1', '$2a$10$O7fnKJMFYK4GcyGhHDNA5OVzhPuHYBgcsQ3s846xjLmUalSEcEAJ2', 'jobseeker', 'jobseeker1@example.com', '13345657788', '2025-04-06 15:48:46', '2025-04-21 19:16:02', NULL, 'jobseeker1', '/static/images/default-avatar.png', '求职者，期望从事前端开发相关工作。');
 INSERT INTO `users` VALUES (14, 'company1', '$2a$10$lJJnV2.jinSXSSjVlbZsDuho6nLlrV7rUxBcsj1R9nTV5wedfsfSC', 'company', 'company1@qq.com', '14522338899', '2025-04-07 09:37:39', '2025-04-07 14:13:11', NULL, 'company1', '/static/images/default-avatar.png', '招聘者，负责公司技术人才招聘。');
 
 SET FOREIGN_KEY_CHECKS = 1;
