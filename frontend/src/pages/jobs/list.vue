@@ -1,5 +1,9 @@
 <template>
   <view class="container">
+    <view class="add-job-section">
+      <button class="add-job-button" @click="showAddJobForm">添加职位</button>
+    </view>
+    
     <view class="search-section">
       <view class="search-box">
         <input
@@ -13,9 +17,61 @@
       </view>
     </view>
 
-    <view class="job-list">
+    <view v-if="isAddingJob" class="add-job-form">
+      <view class="form-header">
+        <text class="form-title">添加新职位</text>
+        <text class="close-icon" @click="hideAddJobForm">×</text>
+      </view>
+      
+      <view class="form-item">
+        <text class="label">职位名称</text>
+        <input class="input" v-model="newJob.title" placeholder="请输入职位名称" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">公司名称</text>
+        <input class="input" v-model="newJob.company" placeholder="请输入公司名称" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">工作地点</text>
+        <input class="input" v-model="newJob.location" placeholder="请输入工作地点" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">薪资范围</text>
+        <input class="input" v-model="newJob.salary_range" placeholder="例如: 15k-25k" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">工作经验</text>
+        <input class="input" v-model="newJob.experience" placeholder="例如: 3-5年" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">学历要求</text>
+        <input class="input" v-model="newJob.education" placeholder="例如: 本科" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">职位标签</text>
+        <input class="input" v-model="newJob.tags" placeholder="使用逗号分隔, 例如: 前端,React,Vue" />
+      </view>
+      
+      <view class="form-item">
+        <text class="label">职位描述</text>
+        <textarea class="textarea" v-model="newJob.description" placeholder="请输入职位描述"></textarea>
+      </view>
+      
+      <view class="form-actions">
+        <button class="btn btn-cancel" @click="hideAddJobForm">取消</button>
+        <button class="btn btn-submit" @click="addJob">确定</button>
+      </view>
+    </view>
+
+    <view class="job-list" v-if="!isAddingJob">
       <view class="job-cards">
-        <view v-for="job in jobs" :key="job.id" class="job-card" @click="goToJobDetail(job.id)">
+        <view v-for="job in displayedJobs" :key="job.id" class="job-card" @click="goToJobDetail(job.id)">
           <view class="job-info">
             <view class="job-header">
               <text class="job-title">{{ job.title }}</text>
@@ -47,7 +103,7 @@
 
 <script>
 import {onLoad, onPullDownRefresh, onReachBottom} from '@dcloudio/uni-app'
-import {ref, reactive} from 'vue';
+import {ref, reactive, computed, onMounted} from 'vue';
 import {jobAPI} from "../../services/api";
 
 export default {
@@ -59,6 +115,24 @@ export default {
     const page = ref(1);
     const jobs = ref([]);
     const originalJobs = ref([]);
+    const localJobs = ref([]);
+    const isAddingJob = ref(false);
+    
+    const newJob = reactive({
+      id: '',
+      title: '',
+      company: '',
+      location: '',
+      salary_range: '',
+      experience: '',
+      education: '',
+      tags: '',
+      description: ''
+    });
+
+    const displayedJobs = computed(() => {
+      return [...localJobs.value, ...jobs.value];
+    });
 
     const filterForm = reactive({
       location: '',
@@ -79,6 +153,9 @@ export default {
         const result = await jobAPI.getJobs();
         jobs.value = result.data.data;
         originalJobs.value = result.data.data;
+        
+        // 加载本地存储的职位
+        loadLocalJobs();
       } catch (error) {
         console.error('获取职位列表失败:', error);
         uni.showToast({
@@ -86,6 +163,70 @@ export default {
           icon: 'none'
         });
       }
+    };
+    
+    // 加载本地存储的职位
+    const loadLocalJobs = () => {
+      try {
+        const storedJobs = uni.getStorageSync('localJobs');
+        if (storedJobs) {
+          localJobs.value = JSON.parse(storedJobs);
+        }
+      } catch (e) {
+        console.error('加载本地职位失败', e);
+      }
+    };
+    
+    // 保存职位到本地存储
+    const saveLocalJobs = () => {
+      try {
+        uni.setStorageSync('localJobs', JSON.stringify(localJobs.value));
+      } catch (e) {
+        console.error('保存本地职位失败', e);
+      }
+    };
+    
+    // 显示添加职位表单
+    const showAddJobForm = () => {
+      isAddingJob.value = true;
+    };
+    
+    // 隐藏添加职位表单
+    const hideAddJobForm = () => {
+      isAddingJob.value = false;
+      resetNewJob();
+    };
+    
+    // 重置新职位表单
+    const resetNewJob = () => {
+      Object.keys(newJob).forEach(key => {
+        newJob[key] = '';
+      });
+    };
+    
+    // 添加新职位
+    const addJob = () => {
+      if (!newJob.title || !newJob.company || !newJob.location) {
+        uni.showToast({
+          title: '请填写必要信息',
+          icon: 'none'
+        });
+        return;
+      }
+      
+      const job = {
+        ...newJob,
+        id: 'local_' + Date.now()
+      };
+      
+      localJobs.value.unshift(job);
+      saveLocalJobs();
+      hideAddJobForm();
+      
+      uni.showToast({
+        title: '职位添加成功',
+        icon: 'success'
+      });
     };
 
     const handleSearch = () => {
@@ -107,7 +248,17 @@ export default {
           } else {
             return false;
           }
-        })
+        });
+        
+        // 也搜索本地职位
+        localJobs.value = uni.getStorageSync('localJobs') ? JSON.parse(uni.getStorageSync('localJobs')).filter(job => {
+          if (job.title?.includes(searchKeyword.value) || job.company?.includes(searchKeyword.value)
+              || job.location?.includes(searchKeyword.value)) {
+            return true;
+          } else {
+            return false;
+          }
+        }) : [];
       } else {
         fetchJobs();
       }
@@ -164,13 +315,20 @@ export default {
       refreshing,
       loadMoreStatus,
       jobs,
+      localJobs,
+      displayedJobs,
+      newJob,
+      isAddingJob,
       handleSearch,
       showFilter,
       resetFilter,
       applyFilter,
       onRefresh,
       loadMore,
-      goToJobDetail
+      goToJobDetail,
+      showAddJobForm,
+      hideAddJobForm,
+      addJob
     };
   }
 };
@@ -182,6 +340,104 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+.add-job-section {
+  padding: 20rpx 30rpx;
+  background-color: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+  
+  .add-job-button {
+    width: 100%;
+    height: 80rpx;
+    line-height: 80rpx;
+    background-color: #42b983;
+    color: #fff;
+    font-size: 30rpx;
+    border-radius: 40rpx;
+  }
+}
+
+.add-job-form {
+  padding: 30rpx;
+  background-color: #fff;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30rpx;
+    
+    .form-title {
+      font-size: 36rpx;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .close-icon {
+      font-size: 48rpx;
+      color: #999;
+    }
+  }
+  
+  .form-item {
+    margin-bottom: 20rpx;
+    
+    .label {
+      display: block;
+      font-size: 28rpx;
+      color: #333;
+      margin-bottom: 10rpx;
+    }
+    
+    .input {
+      width: 100%;
+      height: 80rpx;
+      border: 1rpx solid #dcdfe6;
+      border-radius: 8rpx;
+      padding: 0 20rpx;
+      font-size: 28rpx;
+    }
+    
+    .textarea {
+      width: 100%;
+      height: 200rpx;
+      border: 1rpx solid #dcdfe6;
+      border-radius: 8rpx;
+      padding: 20rpx;
+      font-size: 28rpx;
+    }
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40rpx;
+    
+    .btn {
+      width: 45%;
+      height: 80rpx;
+      line-height: 80rpx;
+      font-size: 30rpx;
+      border-radius: 40rpx;
+      
+      &.btn-cancel {
+        background-color: #f5f5f5;
+        color: #666;
+      }
+      
+      &.btn-submit {
+        background-color: #42b983;
+        color: #fff;
+      }
+    }
+  }
 }
 
 .search-section {
